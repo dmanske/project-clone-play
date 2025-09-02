@@ -15,15 +15,15 @@ export const testarEvolutionAPI = async () => {
       if (status.qrCode) {
         console.log('📱 QR Code disponível para conexão');
       }
-      return false;
+      return { success: false, error: 'Instância não conectada' };
     }
     
     console.log('✅ Instância conectada!');
-    return true;
+    return { success: true };
     
   } catch (error) {
     console.error('❌ Erro ao testar Evolution API:', error);
-    return false;
+    return { success: false, error: String(error) };
   }
 };
 
@@ -37,11 +37,11 @@ export const enviarMensagemTeste = async (telefone: string) => {
     );
     
     console.log('✅ Mensagem enviada:', resultado);
-    return resultado;
+    return { success: true, data: resultado };
     
   } catch (error) {
     console.error('❌ Erro ao enviar mensagem teste:', error);
-    throw error;
+    return { success: false, error: String(error) };
   }
 };
 

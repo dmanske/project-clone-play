@@ -77,6 +77,51 @@ export type Database = {
         }
         Relationships: []
       }
+      credito_vinculacoes: {
+        Row: {
+          created_at: string | null
+          credito_id: string
+          data_uso: string | null
+          id: string
+          observacoes: string | null
+          valor_usado: number
+          viagem_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credito_id: string
+          data_uso?: string | null
+          id?: string
+          observacoes?: string | null
+          valor_usado: number
+          viagem_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credito_id?: string
+          data_uso?: string | null
+          id?: string
+          observacoes?: string | null
+          valor_usado?: number
+          viagem_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credito_vinculacoes_credito_id_fkey"
+            columns: ["credito_id"]
+            isOneToOne: false
+            referencedRelation: "creditos_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credito_vinculacoes_viagem_id_fkey"
+            columns: ["viagem_id"]
+            isOneToOne: false
+            referencedRelation: "viagens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creditos_clientes: {
         Row: {
           ativo: boolean | null
@@ -192,43 +237,79 @@ export type Database = {
       }
       ingressos: {
         Row: {
+          adversario: string | null
           cadeira: string | null
           cliente_id: string
+          codigo_barras: string | null
           created_at: string | null
           data_evento: string
+          desconto: number | null
+          detalhes_pagamento: string | null
           evento: string
           fileira: string | null
           id: string
+          jogo_data: string | null
+          local_jogo: string | null
+          metodo_pagamento: string | null
           observacoes: string | null
+          preco_face: number | null
           setor: string
+          setor_estadio: string | null
+          situacao_financeira: string | null
           status: string | null
+          taxa_servico: number | null
           valor: number
+          valor_final: number | null
         }
         Insert: {
+          adversario?: string | null
           cadeira?: string | null
           cliente_id: string
+          codigo_barras?: string | null
           created_at?: string | null
           data_evento: string
+          desconto?: number | null
+          detalhes_pagamento?: string | null
           evento: string
           fileira?: string | null
           id?: string
+          jogo_data?: string | null
+          local_jogo?: string | null
+          metodo_pagamento?: string | null
           observacoes?: string | null
+          preco_face?: number | null
           setor: string
+          setor_estadio?: string | null
+          situacao_financeira?: string | null
           status?: string | null
+          taxa_servico?: number | null
           valor: number
+          valor_final?: number | null
         }
         Update: {
+          adversario?: string | null
           cadeira?: string | null
           cliente_id?: string
+          codigo_barras?: string | null
           created_at?: string | null
           data_evento?: string
+          desconto?: number | null
+          detalhes_pagamento?: string | null
           evento?: string
           fileira?: string | null
           id?: string
+          jogo_data?: string | null
+          local_jogo?: string | null
+          metodo_pagamento?: string | null
           observacoes?: string | null
+          preco_face?: number | null
           setor?: string
+          setor_estadio?: string | null
+          situacao_financeira?: string | null
           status?: string | null
+          taxa_servico?: number | null
           valor?: number
+          valor_final?: number | null
         }
         Relationships: [
           {
@@ -267,6 +348,30 @@ export type Database = {
           numero_identificacao?: string | null
           tipo_onibus?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      setores_maracana: {
+        Row: {
+          created_at: string | null
+          disponivel: boolean | null
+          id: string
+          nome: string
+          preco_base: number
+        }
+        Insert: {
+          created_at?: string | null
+          disponivel?: boolean | null
+          id?: string
+          nome: string
+          preco_base: number
+        }
+        Update: {
+          created_at?: string | null
+          disponivel?: boolean | null
+          id?: string
+          nome?: string
+          preco_base?: number
         }
         Relationships: []
       }
@@ -508,6 +613,7 @@ export type Database = {
       }
       viagens: {
         Row: {
+          capacidade_onibus: number | null
           created_at: string | null
           data_ida: string
           data_volta: string
@@ -517,10 +623,12 @@ export type Database = {
           onibus_id: string | null
           preco_individual: number
           status_viagem: string | null
+          tem_passeios: boolean | null
           updated_at: string | null
           vagas_disponiveis: number
         }
         Insert: {
+          capacidade_onibus?: number | null
           created_at?: string | null
           data_ida: string
           data_volta: string
@@ -530,10 +638,12 @@ export type Database = {
           onibus_id?: string | null
           preco_individual: number
           status_viagem?: string | null
+          tem_passeios?: boolean | null
           updated_at?: string | null
           vagas_disponiveis: number
         }
         Update: {
+          capacidade_onibus?: number | null
           created_at?: string | null
           data_ida?: string
           data_volta?: string
@@ -543,6 +653,7 @@ export type Database = {
           onibus_id?: string | null
           preco_individual?: number
           status_viagem?: string | null
+          tem_passeios?: boolean | null
           updated_at?: string | null
           vagas_disponiveis?: number
         }
