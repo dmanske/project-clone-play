@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Outlet, Link, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarDays, Bus, CreditCard, ChevronLeft, ChevronRight, Menu, UserPlus, MessageSquare, Home, Store, Settings, ClipboardList, DollarSign, Calculator, Ticket } from "lucide-react";
+import { LayoutDashboard, Users, CalendarDays, Bus, CreditCard, ChevronLeft, ChevronRight, Menu, UserPlus, MessageSquare, Home, Store, Settings, ClipboardList, DollarSign, Calculator, Ticket, Building2, Crown } from "lucide-react";
 import LogoEmpresa from "@/components/empresa/LogoEmpresa";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import LogoutButton from "@/components/LogoutButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { OrganizationStatusBanner } from "@/components/OrganizationStatusBanner";
+import { TenantSelector, CurrentTenantBadge } from "@/components/TenantSelector";
+import { ProtectedNavItem } from "@/components/ProtectedNavItem";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -47,20 +51,7 @@ const NavItem = ({
 };
 
 // LandingPageLink component
-const LandingPageLink = ({ onClick }: { onClick?: () => void }) => {
-  return (
-    <Link 
-      to="/site" 
-      onClick={onClick} 
-      className="flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-all duration-200 whitespace-nowrap group hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 text-gray-600 hover:text-blue-700"
-    >
-      <div className="flex-shrink-0 group-hover:scale-110 transition-transform duration-200">
-        <Home className="h-5 w-5" />
-      </div>
-      <span className="font-medium">Site</span>
-    </Link>
-  );
-};
+
 
 const MainLayout = () => {
   const {
@@ -70,6 +61,7 @@ const MainLayout = () => {
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
   const { user } = useAuth();
+  const { isSuperAdmin } = useSuperAdmin();
   const navigate = useNavigate();
   const userProfile = user ? user.email : "Usuário";
   const userInitials = userProfile?.substring(0, 2).toUpperCase();
@@ -112,13 +104,18 @@ const MainLayout = () => {
       
       {/* User Profile */}
       {!collapsed && (
-        <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-gray-50/30">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-            {userInitials}
+        <div className="p-4 border-b border-gray-200 bg-gray-50/30 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+              {userInitials}
+            </div>
+            <div className="flex flex-col min-w-0 max-w-xs">
+              <span className="text-sm font-semibold text-gray-900 truncate">Administrador</span>
+              <span className="text-xs text-gray-500 truncate">{userProfile}</span>
+            </div>
           </div>
-          <div className="flex flex-col min-w-0 max-w-xs">
-            <span className="text-sm font-semibold text-gray-900 truncate">Administrador</span>
-            <span className="text-xs text-gray-500 truncate">{userProfile}</span>
+          <div className="pt-2 border-t border-gray-200">
+            <CurrentTenantBadge />
           </div>
         </div>
       )}
@@ -132,82 +129,104 @@ const MainLayout = () => {
             to="/dashboard" 
             onClick={closeMenu} 
           />
-          <LandingPageLink onClick={closeMenu} />
-          <NavItem 
-            icon={<CalendarDays className="h-5 w-5" />} 
-            title="Viagens" 
-            to="/dashboard/viagens" 
-            onClick={closeMenu} 
-          />
 
-          <NavItem 
-            icon={<Users className="h-5 w-5" />} 
-            title="Clientes" 
-            to="/dashboard/clientes" 
-            onClick={closeMenu} 
-          />
-          <NavItem 
-            icon={<UserPlus className="h-5 w-5" />} 
-            title="Cadastrar Cliente" 
-            to="/dashboard/cadastrar-cliente" 
-            onClick={closeMenu} 
-          />
+          <ProtectedNavItem module="viagens">
+            <NavItem 
+              icon={<CalendarDays className="h-5 w-5" />} 
+              title="Viagens" 
+              to="/dashboard/viagens" 
+              onClick={closeMenu} 
+            />
+          </ProtectedNavItem>
 
+          <ProtectedNavItem module="clientes">
+            <NavItem 
+              icon={<Users className="h-5 w-5" />} 
+              title="Clientes" 
+              to="/dashboard/clientes" 
+              onClick={closeMenu} 
+            />
+          </ProtectedNavItem>
 
-          <NavItem 
-            icon={<Bus className="h-5 w-5" />} 
-            title="Ônibus" 
-            to="/dashboard/onibus" 
-            onClick={closeMenu} 
-          />
-          <NavItem 
-            icon={<Ticket className="h-5 w-5" />} 
-            title="Ingressos" 
-            to="/dashboard/ingressos" 
-            onClick={closeMenu} 
-          />
-          <NavItem 
-            icon={<Calculator className="h-5 w-5" />} 
-            title="Créditos de Viagem" 
-            to="/dashboard/creditos" 
-            onClick={closeMenu} 
-          />
-          <NavItem 
-            icon={<Store className="h-5 w-5" />} 
-            title="Loja Pública" 
-            to="/dashboard/loja" 
-            onClick={closeMenu} 
-          />
-          <NavItem 
-            icon={<Settings className="h-5 w-5" />} 
-            title="Admin Loja" 
-            to="/dashboard/loja-admin" 
-            onClick={closeMenu} 
-          />
-          <NavItem 
-            icon={<DollarSign className="h-5 w-5" />} 
-            title="Financeiro" 
-            to="/dashboard/financeiro" 
-            onClick={closeMenu} 
-          />
-          <NavItem 
-            icon={<CreditCard className="h-5 w-5" />} 
-            title="Pagamentos" 
-            to="/dashboard/pagamentos" 
-            onClick={closeMenu} 
-          />
+          <ProtectedNavItem module="clientes" action="write">
+            <NavItem 
+              icon={<UserPlus className="h-5 w-5" />} 
+              title="Cadastrar Cliente" 
+              to="/dashboard/cadastrar-cliente" 
+              onClick={closeMenu} 
+            />
+          </ProtectedNavItem>
+
+          <ProtectedNavItem module="onibus">
+            <NavItem 
+              icon={<Bus className="h-5 w-5" />} 
+              title="Ônibus" 
+              to="/dashboard/onibus" 
+              onClick={closeMenu} 
+            />
+          </ProtectedNavItem>
+
+          <ProtectedNavItem module="viagens">
+            <NavItem 
+              icon={<Ticket className="h-5 w-5" />} 
+              title="Ingressos" 
+              to="/dashboard/ingressos" 
+              onClick={closeMenu} 
+            />
+          </ProtectedNavItem>
+
+          <ProtectedNavItem module="viagens">
+            <NavItem 
+              icon={<Calculator className="h-5 w-5" />} 
+              title="Créditos de Viagem" 
+              to="/dashboard/creditos" 
+              onClick={closeMenu} 
+            />
+          </ProtectedNavItem>
+
+          <ProtectedNavItem module="financeiro">
+            <NavItem 
+              icon={<DollarSign className="h-5 w-5" />} 
+              title="Financeiro" 
+              to="/dashboard/financeiro" 
+              onClick={closeMenu} 
+            />
+          </ProtectedNavItem>
+
           <NavItem 
             icon={<MessageSquare className="h-5 w-5" />} 
             title="WhatsApp" 
             to="/dashboard/whatsapp" 
             onClick={closeMenu} 
           />
-          <NavItem 
-            icon={<Settings className="h-5 w-5" />} 
-            title="Configurações" 
-            to="/dashboard/empresa/configuracoes" 
-            onClick={closeMenu} 
-          />
+
+          <ProtectedNavItem module="configuracoes">
+            <NavItem 
+              icon={<Settings className="h-5 w-5" />} 
+              title="Configurações" 
+              to="/dashboard/empresa/configuracoes" 
+              onClick={closeMenu} 
+            />
+          </ProtectedNavItem>
+
+          <ProtectedNavItem module="configuracoes">
+            <NavItem 
+              icon={<Building2 className="h-5 w-5" />} 
+              title="Configurações da Organização" 
+              to="/dashboard/organization/settings" 
+              onClick={closeMenu} 
+            />
+          </ProtectedNavItem>
+
+          {/* Super Admin Dashboard - apenas para super admins */}
+          {isSuperAdmin && (
+            <NavItem 
+              icon={<Crown className="h-5 w-5" />} 
+              title="Super Admin" 
+              to="/dashboard/super-admin" 
+              onClick={closeMenu} 
+            />
+          )}
         </div>
       </ScrollArea>
       
@@ -257,6 +276,10 @@ const MainLayout = () => {
 
         {/* Page content */}
         <main className="flex-1 relative bg-gray-50">
+          <div className="p-4 space-y-4">
+            <TenantSelector />
+            <OrganizationStatusBanner />
+          </div>
           <Outlet />
         </main>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { X, Search, Calculator, CreditCard, AlertCircle } from 'lucide-react';
 import {
   Dialog,

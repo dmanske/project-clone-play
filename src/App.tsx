@@ -7,11 +7,15 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // Auth
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Login from "@/pages/Login";
 import Cadastro from "@/pages/Cadastro";
+import Onboarding from "@/pages/Onboarding";
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import NotFound from '@/pages/NotFound';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { TenantProvider } from '@/contexts/TenantContext';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
 // Dashboard Layout
@@ -79,6 +83,18 @@ import Creditos from "@/pages/Creditos";
 // Import Sistema de Configuração de Passeios
 import ConfiguracaoPasseios from "@/pages/ConfiguracaoPasseios";
 
+// Import página de administração de organizações
+import AdminOrganizations from "@/pages/AdminOrganizations";
+
+// Import página de configurações da organização
+import OrganizationSettings from "@/pages/OrganizationSettings";
+
+// Import Super Admin Dashboard
+import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
+
+// Import User Management
+import UserManagement from "@/pages/UserManagement";
+
 const queryClient = new QueryClient()
 
 function App() {
@@ -86,7 +102,8 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <SidebarProvider>
+          <TenantProvider>
+            <SidebarProvider>
             <Routes>
               {/* Landing Page como página inicial */}
               <Route path="/" element={<Index />} />
@@ -109,6 +126,9 @@ function App() {
               {/* Auth routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Cadastro />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/cadastro-publico" element={<CadastroPublico />} />
               
               {/* Rotas de pagamento */}
@@ -164,12 +184,25 @@ function App() {
                   
                   {/* Configurações da Empresa */}
                   <Route path="empresa/configuracoes" element={<EmpresaConfigPage />} />
+                  
+                  {/* Administração de Organizações */}
+                  <Route path="admin/organizations" element={<AdminOrganizations />} />
+                  
+                  {/* Configurações da Organização */}
+                  <Route path="organization/settings" element={<OrganizationSettings />} />
+                  
+                  {/* Super Admin Dashboard */}
+                  <Route path="super-admin" element={<SuperAdminDashboard />} />
+                  
+                  {/* User Management */}
+                  <Route path="usuarios" element={<UserManagement />} />
                 </Route>
               </Route>
 
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </SidebarProvider>
+            </SidebarProvider>
+          </TenantProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

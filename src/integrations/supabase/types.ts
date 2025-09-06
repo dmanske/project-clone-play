@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      adversarios: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          id: string
+          logo_url: string | null
+          nome: string
+          organization_id: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          nome: string
+          organization_id: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          nome?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adversarios_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           bairro: string

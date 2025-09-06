@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useTenant } from '@/contexts/TenantContext';
 
 interface Viagem {
   id: string;
@@ -14,15 +15,19 @@ interface Viagem {
 export function useViagens() {
   const [viagens, setViagens] = useState<Viagem[]>([]);
   const [carregando, setCarregando] = useState(false);
+  const { tenant } = useTenant();
 
   // Função para buscar viagens
   const buscarViagens = useCallback(async (limite?: number) => {
+    if (!tenant?.organization.id) return;
+    
     setCarregando(true);
 
     try {
       let query = supabase
         .from('viagens')
         .select('id, adversario, data_jogo, valor_padrao, capacidade_onibus, status_viagem, created_at')
+        .eq('organization_id', tenant.organization.id)
         .order('data_jogo', { ascending: false });
 
       if (limite) {
@@ -42,16 +47,19 @@ export function useViagens() {
     } finally {
       setCarregando(false);
     }
-  }, []);
+  }, [tenant?.organization.id]);
 
   // Função para buscar viagens disponíveis para ingressos (apenas abertas e em andamento)
   const buscarViagensAtivas = useCallback(async () => {
+    if (!tenant?.organization.id) return;
+    
     setCarregando(true);
 
     try {
       const { data, error } = await supabase
         .from('viagens')
         .select('id, adversario, data_jogo, valor_padrao, capacidade_onibus, status_viagem, created_at')
+        .eq('organization_id', tenant.organization.id)
         .in('status_viagem', ['Aberta', 'Em andamento', 'Fechada']) // Incluindo 'Fechada' pois ainda pode vender ingressos
         .order('data_jogo', { ascending: false }); // Mais recentes primeiro
 
@@ -67,15 +75,18 @@ export function useViagens() {
     } finally {
       setCarregando(false);
     }
-  }, []);
+  }, [tenant?.organization.id]);
   
   // Função para buscar viagens específicas para ingressos
   const buscarViagensIngressos = useCallback(async () => {
+    if (!tenant?.organization.id) return [];
+    
     try {
       const { data, error } = await supabase
-        .from('viagens_ingressos')
+        .from('viagens')
         .select('*')
-        .eq('status', 'Ativa')
+        .eq('organization_id', tenant.organization.id)
+        .eq('status_viagem', 'Aberta')
         .order('data_jogo', { ascending: true });
 
       if (error) {
@@ -89,15 +100,18 @@ export function useViagens() {
       console.error('Erro inesperado ao buscar viagens de ingressos:', error);
       return [];
     }
-  }, []);
+  }, [tenant?.organization.id]);
 
   // Função para buscar viagem por ID
   const buscarViagemPorId = useCallback(async (id: string): Promise<Viagem | null> => {
+    if (!tenant?.organization.id) return null;
+    
     try {
       const { data, error } = await supabase
         .from('viagens')
         .select('*')
         .eq('id', id)
+        .eq('organization_id', tenant.organization.id)
         .single();
 
       if (error) {
@@ -110,7 +124,7 @@ export function useViagens() {
       console.error('Erro inesperado ao buscar viagem:', error);
       return null;
     }
-  }, []);
+  }, [tenant?.organization.id]);
 
   return {
     viagens,

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { X, AlertTriangle, Trash2, ChevronLeft, ChevronRight, Copy, Eye, Edit } from 'lucide-react';
 import { formatDateTimeSafe } from '@/lib/date-utils';
 import { toast } from 'sonner';

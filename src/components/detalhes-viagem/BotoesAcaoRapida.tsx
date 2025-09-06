@@ -2,6 +2,7 @@
 // Task 20.2: Botões de ação rápida nos cards
 
 import React, { useState } from 'react';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu, 

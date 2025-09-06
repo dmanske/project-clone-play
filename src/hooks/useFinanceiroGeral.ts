@@ -63,7 +63,7 @@ export interface ContaReceber {
   data_vencimento: string;
   dias_atraso: number;
   status: string;
-  parcelas_detalhes?: {
+  pagamentos_detalhes?: {
     numero: number;
     valor: number;
     data_vencimento: string;
@@ -361,17 +361,16 @@ export function useFinanceiroGeral(filtroData: { inicio: string; fim: string }) 
         margem_lucro: margemLucro,
         total_pendencias: totalPendencias,
         count_pendencias: countPendencias,
-        crescimento_receitas: 0, // TODO: Calcular vs período anterior
-        crescimento_despesas: 0, // TODO: Calcular vs período anterior
-        // Breakdown por categoria
+        crescimento_receitas: crescimentoReceitas,
+        crescimento_despesas: crescimentoDespesas,
         receitas_viagem: receitasViagem,
         receitas_passeios: receitasPasseios,
         receitas_extras: receitasExtras,
-        receitas_ingressos: receitasIngressos, // ✨ NOVO
-        percentual_viagem: percentualViagem,
-        percentual_passeios: percentualPasseios,
-        percentual_extras: percentualExtras,
-        percentual_ingressos: percentualIngressos // ✨ NOVO
+        receitas_ingressos: 0,
+        percentual_viagem: totalReceitas > 0 ? (receitasViagem / totalReceitas) * 100 : 0,
+        percentual_passeios: totalReceitas > 0 ? (receitasPasseios / totalReceitas) * 100 : 0,
+        percentual_extras: totalReceitas > 0 ? (receitasExtras / totalReceitas) * 100 : 0,
+        percentual_ingressos: 0
       });
 
     } catch (error) {
@@ -470,7 +469,7 @@ export function useFinanceiroGeral(filtroData: { inicio: string; fim: string }) 
 
         if (vendasError) throw vendasError;
 
-        // Agrupar custos por viagem
+        // Agrupar custos por passeio
         custosPasseiosPorViagem = (vendasData || []).reduce((acc: any, item: any) => {
           const viagemId = item.viagem_passageiros.viagem_id;
           const custo = item.passeios.custo_operacional || 0;
@@ -568,7 +567,7 @@ export function useFinanceiroGeral(filtroData: { inicio: string; fim: string }) 
   const fetchIngressosFinanceiro = async () => {
     try {
       const { data: ingressosData, error: ingressosError } = await supabase
-        .from('ingressos')
+        .from('ingressos_com_cliente')
         .select(`
           id,
           adversario,
@@ -634,21 +633,19 @@ export function useFinanceiroGeral(filtroData: { inicio: string; fim: string }) 
 
       // Buscar pagamentos de passageiros como entradas
       const { data: pagamentosData, error: pagamentosError } = await supabase
-        .from('historico_pagamentos_categorizado')
+        .from('viagem_passageiros' as any)
         .select(`
-          valor_pago,
-          data_pagamento,
-          forma_pagamento,
-          categoria,
-          viagem_passageiro_id
+          id,
+          valor,
+          created_at,
+          viagem_id,
+          cliente_id
         `)
-        .gte('data_pagamento', filtroData.inicio)
-        .lte('data_pagamento', filtroData.fim)
-        .order('data_pagamento', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (!pagamentosError && pagamentosData) {
         // Buscar detalhes dos passageiros para os pagamentos
-        const passageiroIds = [...new Set(pagamentosData.map(p => p.viagem_passageiro_id))];
+        const passageiroIds = [...new Set(pagamentosData.map(p => p.id))];
         
         if (passageiroIds.length > 0) {
           const { data: passageirosDetalhes } = await supabase
@@ -696,19 +693,16 @@ export function useFinanceiroGeral(filtroData: { inicio: string; fim: string }) 
             return acc;
           }, {});
 
-          pagamentosData.forEach((pagamento: any) => {
-            const passageiro = passageirosMap[pagamento.viagem_passageiro_id];
-            const categoriaLabel = pagamento.categoria === 'viagem' ? 'Viagem' : 
-                                 pagamento.categoria === 'passeios' ? 'Passeios' : 
-                                 'Pagamento Completo';
+          pagamentosData.forEach((passageiro: any) => {
+            const passageiroDetalhes = passageirosMap[passageiro.id];
             fluxoItems.push({
-              data: pagamento.data_pagamento,
-              descricao: `${categoriaLabel} - ${passageiro?.cliente?.nome || 'Passageiro'}`,
+              data: passageiro.created_at,
+              descricao: `Pagamento - ${passageiroDetalhes?.cliente?.nome || 'Passageiro'}`,
               tipo: 'entrada',
               categoria: 'passageiro',
-              valor: pagamento.valor_pago,
-              viagem_id: passageiro?.viagem_id,
-              viagem_nome: passageiro?.viagem?.adversario
+              valor: passageiro.valor || 0,
+              viagem_id: passageiro.viagem_id,
+              viagem_nome: passageiroDetalhes?.viagem?.adversario
             });
           });
         }
@@ -860,12 +854,7 @@ export function useFinanceiroGeral(filtroData: { inicio: string; fim: string }) 
                 custo_operacional
               ),
               viagem_passageiros!inner (
-                viagem_id,
-                viagens!inner (
-                  id,
-                  adversario,
-                  data_jogo
-                )
+                viagem_id
               )
             `)
             .in('viagem_passageiros.viagem_id', viagemIds);
@@ -918,7 +907,7 @@ export function useFinanceiroGeral(filtroData: { inicio: string; fim: string }) 
       // ✨ NOVO: Buscar ingressos individuais para o fluxo de caixa
       try {
         const { data: ingressosFluxoData, error: ingressosFluxoError } = await supabase
-          .from('ingressos')
+          .from('ingressos_com_cliente')
           .select(`
             id,
             adversario,
