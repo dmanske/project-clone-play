@@ -50,44 +50,86 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Função para buscar o perfil do usuário
   const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          organization:organizations(
-            id,
-            name,
-            logo_url,
-            time_casa_padrao,
-            cor_primaria,
-            cor_secundaria
-          )
-        `)
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Erro ao buscar perfil:', error);
+      console.log('Buscando perfil para usuário:', userId);
+      
+      // Buscar dados do usuário no auth como fallback
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user || user.id !== userId) {
+        console.error('Usuário não encontrado no auth');
         return null;
       }
 
-      // Garantir que as propriedades obrigatórias existam
-      const profile: UserProfile = {
-        ...data,
-        permissions: (data as any).permissions || {},
-        active: (data as any).active ?? true,
-        organization: data.organization ? {
-          ...data.organization,
-          slug: data.organization.name?.toLowerCase().replace(/\s+/g, '-') || ''
-        } : undefined
-      };
+      // Tentar buscar perfil usando RPC ou query direta com fallback
+      try {
+        // Primeiro tentar com query direta usando any para contornar tipos
+        const { data, error } = await (supabase as any)
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
 
-      return profile;
+        if (data && !error) {
+          console.log('Perfil encontrado:', data);
+          
+          // Buscar organização se existir
+          let organization = undefined;
+          if (data.organization_id) {
+            try {
+              const { data: orgData } = await (supabase as any)
+                .from('organizations')
+                .select('*')
+                .eq('id', data.organization_id)
+                .single();
+              
+              if (orgData) {
+                organization = {
+                  id: orgData.id,
+                  name: orgData.name,
+                  slug: orgData.name?.toLowerCase().replace(/\s+/g, '-') || '',
+                  logo_url: orgData.logo_url,
+                  time_casa_padrao: orgData.time_casa_padrao,
+                  cor_primaria: orgData.cor_primaria,
+                  cor_secundaria: orgData.cor_secundaria
+                };
+              }
+            } catch (orgError) {
+              console.log('Erro ao buscar organização:', orgError);
+            }
+          }
+          
+          return {
+            id: data.id || userId,
+            email: data.email || user.email || '',
+            full_name: data.full_name || user.user_metadata?.full_name || 'Usuário',
+            role: data.role || 'user',
+            permissions: data.permissions || {},
+            active: data.active ?? true,
+            organization_id: data.organization_id,
+            organization
+          };
+        }
+      } catch (dbError) {
+        console.log('Erro ao buscar perfil no banco:', dbError);
+      }
+
+      // Se chegou até aqui, criar perfil básico com dados do auth
+      console.log('Criando perfil básico com dados do auth');
+      return {
+        id: userId,
+        email: user.email || '',
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+        role: 'user',
+        permissions: {},
+        active: true
+      };
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
       return null;
     }
   };
+
+
 
   const refreshProfile = async () => {
     if (user) {
@@ -115,10 +157,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Buscar perfil do usuário
           const userProfile = await fetchUserProfile(session.user.id);
           setProfile(userProfile);
-          
-          if (location.pathname === '/login') {
-            navigate("/dashboard");
-          }
         }
       } catch (error) {
         console.error('Erro ao verificar sessão:', error);
@@ -141,6 +179,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Buscar perfil do usuário
           const userProfile = await fetchUserProfile(session.user.id);
           setProfile(userProfile);
+          
+          // Redirecionar apenas se estiver na página de login
+          if (window.location.pathname === '/login') {
+            navigate("/dashboard");
+          }
         } else {
           setSession(null);
           setUser(null);
@@ -152,7 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return () => subscription.unsubscribe();
-  }, [navigate, location.pathname]);
+  }, []); // ← Array vazio para evitar loops
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -211,40 +254,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        if (organizationId) {
-          // Criar perfil do usuário para organização existente
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-              id: data.user.id,
-              email: email,
-              full_name: nome,
-              organization_id: organizationId,
-              role: 'user',
-              active: true
-            });
-
-          if (profileError) {
-            console.error('Erro ao criar perfil:', profileError);
+        // Atualizar metadados do usuário no auth
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: {
+            full_name: nome,
+            organization_id: organizationId || null,
+            role: organizationId ? 'user' : 'admin'
           }
-          
+        });
+
+        if (updateError) {
+          console.error('Erro ao atualizar metadados:', updateError);
+        }
+
+        if (organizationId) {
           toast.success("Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.");
           navigate("/login");
         } else {
-          // Novo tenant - criar perfil básico e redirecionar para onboarding
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-              id: data.user.id,
-              email: email,
-              full_name: nome,
-              role: 'admin',
-              active: true
-            });
-
-          if (profileError) {
-            console.error('Erro ao criar perfil:', profileError);
-          }
+          // Novo tenant - redirecionar para onboarding
           
           toast.success("Cadastro realizado com sucesso! Verifique seu email e complete a configuração.");
           navigate("/onboarding");
@@ -260,25 +287,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      setIsLoading(true);
-      
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        throw error;
-      }
-      
+      // Limpar estados locais ANTES do logout do Supabase
       setUser(null);
       setSession(null);
       setProfile(null);
-
-      toast.success("Logout realizado com sucesso!");
+      
+      // Fazer logout no Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Erro no logout:', error);
+        throw error;
+      }
+      
+      // Limpar qualquer cache do localStorage relacionado ao Supabase
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('supabase.auth.token') || key.startsWith('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Aguardar um pouco para garantir que o estado foi limpo
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Redirecionar para login
       navigate("/login");
-    } catch (error: any) {
-      console.error("Erro ao fazer logout:", error);
-      toast.error("Erro ao fazer logout.");
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Mesmo com erro, limpar estados e redirecionar
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      navigate("/login");
     }
   };
 

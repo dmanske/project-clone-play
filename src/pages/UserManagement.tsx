@@ -12,15 +12,17 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { OrganizationUser } from '@/hooks/useUserManagement';
 
 const UserManagement = () => {
   const { profile } = useAuth();
   const { canAccess } = usePermissions();
-  const { users, loading, canManageUsers, canEditUser } = useUserManagement();
+  const { users, loading, canManageUsers, canEditUser, canRemoveUser, removeUser } = useUserManagement();
   const [selectedUser, setSelectedUser] = useState<OrganizationUser | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<OrganizationUser | null>(null);
 
   // Verificar se o usuário tem permissão para acessar gestão de usuários
   if (!canAccess('usuarios', 'read')) {
@@ -38,6 +40,13 @@ const UserManagement = () => {
   const handleEditUser = (user: OrganizationUser) => {
     setSelectedUser(user);
     setEditDialogOpen(true);
+  };
+
+  const handleRemoveUser = async () => {
+    if (userToDelete) {
+      await removeUser(userToDelete.id);
+      setUserToDelete(null);
+    }
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -160,15 +169,46 @@ const UserManagement = () => {
                             </TableCell>
                             {canManageUsers() && (
                               <TableCell>
-                                {canEditUser(user) && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleEditUser(user)}
-                                  >
-                                    Editar
-                                  </Button>
-                                )}
+                                <div className="flex gap-2">
+                                  {canEditUser(user) && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleEditUser(user)}
+                                    >
+                                      Editar
+                                    </Button>
+                                  )}
+                                  {canRemoveUser(user) && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          variant="destructive"
+                                          size="sm"
+                                          onClick={() => setUserToDelete(user)}
+                                        >
+                                          Deletar
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Tem certeza que deseja remover <strong>{user.full_name}</strong> da organização?
+                                            <br />
+                                            Esta ação não pode ser desfeita. O usuário perderá acesso a todos os recursos da organização.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancelar</AlertDialogCancel>
+                                          <AlertDialogAction onClick={handleRemoveUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                            Confirmar exclusão
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
+                                </div>
                               </TableCell>
                             )}
                           </TableRow>

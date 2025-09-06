@@ -104,27 +104,32 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Função para atualizar dados do tenant
   const refreshTenant = async () => {
+    // Se não há usuário ou profile, limpar tenant imediatamente
     if (!user || !profile?.organization_id) {
       setTenant(null);
+      setError(null);
       setIsLoading(false);
       return;
     }
-
+  
     setIsLoading(true);
     setError(null);
-
+  
     try {
       const tenantData = await fetchTenantData(profile.organization_id);
       
       if (!tenantData) {
         throw new Error('Não foi possível carregar os dados da organização');
       }
-
+  
       setTenant(tenantData);
     } catch (err: any) {
       console.error('Erro ao carregar tenant:', err);
       setError(err.message || 'Erro ao carregar dados da organização');
-      toast.error('Erro ao carregar dados da organização');
+      // Não mostrar toast se o usuário não está logado
+      if (user && profile) {
+        toast.error('Erro ao carregar dados da organização');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -218,6 +218,15 @@ const MainLayout = () => {
             />
           </ProtectedNavItem>
 
+          <ProtectedNavItem module="usuarios">
+            <NavItem 
+              icon={<Users className="h-5 w-5" />} 
+              title="Gestão de Usuários" 
+              to="/dashboard/usuarios" 
+              onClick={closeMenu} 
+            />
+          </ProtectedNavItem>
+
           {/* Super Admin Dashboard - apenas para super admins */}
           {isSuperAdmin && (
             <NavItem 
