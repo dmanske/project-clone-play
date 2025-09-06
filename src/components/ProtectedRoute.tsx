@@ -5,7 +5,7 @@ import { TenantProtection } from "./TenantProtection";
 import { useEffect, useState } from "react";
 
 export const ProtectedRoute = () => {
-  const { user, isLoading, session } = useAuth();
+  const { user, isLoading, session, profile } = useAuth();
   const [shouldRedirect, setShouldRedirect] = useState(false);
   
   // Verificar se deve redirecionar após um delay para evitar flickers
@@ -37,7 +37,12 @@ export const ProtectedRoute = () => {
   if (shouldRedirect || (!isLoading && !user)) {
     return <Navigate to="/login" replace />;
   }
-  
+
+  // Se o usuário está logado mas não tem organização, redirecionar para onboarding
+  if (user && profile && !profile.organization_id) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   // Se estiver logado, protege com verificação de tenant
   return (
     <TenantProtection 
