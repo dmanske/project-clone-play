@@ -1020,7 +1020,7 @@ const InscricaoViagemModal: React.FC<InscricaoViagemModalProps> = ({
                     <Card className="mb-6">
                       <CardContent className="p-4">
                         <div className="text-center">
-                          <AlertTriangle className="h-8 w-8 text-orange-600 mx-auto mb-2" />
+                          <div className="h-8 w-8 bg-orange-600 rounded-full mx-auto mb-2 flex items-center justify-center text-white">!</div>
                           <h4 className="font-medium">Parcelamento Obrigatório</h4>
                           <p className="text-sm text-gray-600 mt-1">
                             Esta viagem exige pagamento em parcelas fixas.

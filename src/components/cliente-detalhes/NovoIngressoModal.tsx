@@ -53,7 +53,7 @@ const NovoIngressoModal: React.FC<NovoIngressoModalProps> = ({
     observacoes: ''
   });
 
-  const { setores, loading: setoresLoading } = useSetoresMaracana();
+  const { setores, carregando: setoresLoading } = useSetoresMaracana();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

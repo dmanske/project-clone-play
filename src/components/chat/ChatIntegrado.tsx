@@ -278,11 +278,11 @@ export const ChatIntegrado = ({
                     // Testar conexão
                     const teste = await testarEvolutionAPI();
                     
-                    if (teste.success) {
+                    if (teste) {
                       // Enviar mensagem de teste
                       const resultado = await enviarMensagemTeste(clienteTelefone);
                       
-                      if (resultado.success) {
+                      if (resultado) {
                         const sucesso: any = {
                           id: Date.now().toString(),
                           conteudo: `🎉 Teste realizado com sucesso!\n\nMensagem enviada para ${clienteTelefone}`,
@@ -302,7 +302,7 @@ export const ChatIntegrado = ({
                     } else {
                       const erro: any = {
                         id: Date.now().toString(),
-                        conteudo: `❌ Evolution API não conectada: ${teste.error}`,
+                        conteudo: `❌ Evolution API não conectada`,
                         tipo: 'recebida',
                         timestamp: new Date()
                       };
