@@ -287,11 +287,16 @@ const CadastrarViagem = () => {
         .from("viagens")
         .insert({
           adversario: data.adversario,
+          destino: data.local_jogo, // Adicionar campo destino
+          data_ida: dataJogoFormatted, // Mapear data_jogo para data_ida
+          data_volta: dataJogoFormatted, // Usar a mesma data como padrão
           data_jogo: dataJogoFormatted,
           data_saida: formatInputDateToISO(data.data_saida),
           local_jogo: data.local_jogo,
+          preco_individual: data.valor_padrao ? parseFloat(data.valor_padrao) : null,
           valor_padrao: data.valor_padrao ? parseFloat(data.valor_padrao) : null,
           capacidade_onibus: parseInt(data.capacidade_onibus),
+          vagas_disponiveis: parseInt(data.capacidade_onibus), // Inicialmente igual à capacidade
           status_viagem: data.status_viagem,
           setor_padrao: data.setor_padrao,
           nome_estadio: data.nome_estadio || null,

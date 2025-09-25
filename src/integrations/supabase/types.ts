@@ -3488,11 +3488,11 @@ export type Database = {
           capacidade_onibus: number | null
           cidade_embarque: string | null
           created_at: string | null
-          data_ida: string
+          data_ida: string | null
           data_jogo: string | null
           data_saida: string | null
-          data_volta: string
-          destino: string
+          data_volta: string | null
+          destino: string | null
           dias_antecedencia: number | null
           empresa: string | null
           exige_pagamento_completo: boolean | null
@@ -3507,14 +3507,14 @@ export type Database = {
           outro_passeio: string | null
           passeios_pagos: Json | null
           permite_viagem_com_pendencia: boolean | null
-          preco_individual: number
+          preco_individual: number | null
           setor_padrao: string | null
           status_viagem: string | null
           tem_passeios: boolean | null
           tipo_onibus: string | null
           tipo_pagamento: string | null
           updated_at: string | null
-          vagas_disponiveis: number
+          vagas_disponiveis: number | null
           valor_padrao: number | null
         }
         Insert: {
@@ -3522,11 +3522,11 @@ export type Database = {
           capacidade_onibus?: number | null
           cidade_embarque?: string | null
           created_at?: string | null
-          data_ida: string
+          data_ida?: string | null
           data_jogo?: string | null
           data_saida?: string | null
-          data_volta: string
-          destino: string
+          data_volta?: string | null
+          destino?: string | null
           dias_antecedencia?: number | null
           empresa?: string | null
           exige_pagamento_completo?: boolean | null
@@ -3541,14 +3541,14 @@ export type Database = {
           outro_passeio?: string | null
           passeios_pagos?: Json | null
           permite_viagem_com_pendencia?: boolean | null
-          preco_individual: number
+          preco_individual?: number | null
           setor_padrao?: string | null
           status_viagem?: string | null
           tem_passeios?: boolean | null
           tipo_onibus?: string | null
           tipo_pagamento?: string | null
           updated_at?: string | null
-          vagas_disponiveis: number
+          vagas_disponiveis?: number | null
           valor_padrao?: number | null
         }
         Update: {
@@ -3556,11 +3556,11 @@ export type Database = {
           capacidade_onibus?: number | null
           cidade_embarque?: string | null
           created_at?: string | null
-          data_ida?: string
+          data_ida?: string | null
           data_jogo?: string | null
           data_saida?: string | null
-          data_volta?: string
-          destino?: string
+          data_volta?: string | null
+          destino?: string | null
           dias_antecedencia?: number | null
           empresa?: string | null
           exige_pagamento_completo?: boolean | null
@@ -3575,14 +3575,14 @@ export type Database = {
           outro_passeio?: string | null
           passeios_pagos?: Json | null
           permite_viagem_com_pendencia?: boolean | null
-          preco_individual?: number
+          preco_individual?: number | null
           setor_padrao?: string | null
           status_viagem?: string | null
           tem_passeios?: boolean | null
           tipo_onibus?: string | null
           tipo_pagamento?: string | null
           updated_at?: string | null
-          vagas_disponiveis?: number
+          vagas_disponiveis?: number | null
           valor_padrao?: number | null
         }
         Relationships: [
