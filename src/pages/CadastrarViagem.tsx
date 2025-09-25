@@ -33,7 +33,7 @@ const viagemSchema = z.object({
   local_jogo: z.string().default("Rio de Janeiro"),
   valor_padrao: z.string().optional(),
   capacidade_onibus: z.string().min(1, "Capacidade do ônibus é obrigatória"),
-  status_viagem: z.string().default("Aberta"),
+  status_viagem: z.string().default("planejada"),
   setor_padrao: z.string().optional(),
   nome_estadio: z.string().optional(),
   cidade_embarque: z.string().default("Blumenau"),
@@ -105,7 +105,7 @@ const CadastrarViagem = () => {
       local_jogo: "Rio de Janeiro",
       valor_padrao: "",
       capacidade_onibus: "46",
-      status_viagem: "Aberta",
+      status_viagem: "planejada", // Usar o valor padrão correto
       setor_padrao: "Norte",
       nome_estadio: "",
       cidade_embarque: "Blumenau",
