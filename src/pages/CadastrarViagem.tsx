@@ -282,10 +282,22 @@ const CadastrarViagem = () => {
 
       const dataJogoFormatted = formatInputDateToISO(data.data_jogo);
       
+      // Buscar organization_id do usuário atual
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.organization_id) {
+        throw new Error('Usuário não possui organização associada');
+      }
+
       // Criar a viagem
       const { data: viagemData, error: viagemError } = await supabase
         .from("viagens")
         .insert({
+          organization_id: profile.organization_id,
           adversario: data.adversario,
           destino: data.local_jogo, // Adicionar campo destino
           data_ida: dataJogoFormatted, // Mapear data_jogo para data_ida
