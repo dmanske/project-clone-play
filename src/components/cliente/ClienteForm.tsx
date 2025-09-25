@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useClientValidation } from "@/hooks/useClientValidation";
-import { useTenant } from "@/contexts/TenantContext";
 import { cleanCPF, cleanPhone, convertBrazilianDateToISO, convertISOToBrazilianDate } from "@/utils/formatters";
 import { formSchema, type ClienteFormData } from "./ClienteFormSchema";
 import { PersonalInfoFields } from "./PersonalInfoFields";
@@ -23,7 +22,6 @@ interface ClienteFormProps {
 export const ClienteForm: React.FC<ClienteFormProps> = ({ cliente, onSubmitSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { validateClient, isValidating } = useClientValidation();
-  const { tenant } = useTenant();
 
 
 
@@ -65,13 +63,6 @@ export const ClienteForm: React.FC<ClienteFormProps> = ({ cliente, onSubmitSucce
 
 
 
-      // Verificar se temos organização
-      if (!tenant?.organization?.id) {
-        toast.error("Erro: Organização não encontrada. Faça login novamente.");
-        setIsSubmitting(false);
-        return;
-      }
-
       const clienteData = {
         nome: data.nome.trim(),
         cpf: cleanCPF(data.cpf),
@@ -90,7 +81,6 @@ export const ClienteForm: React.FC<ClienteFormProps> = ({ cliente, onSubmitSucce
         observacoes: data.observacoes?.trim() || null,
         foto: data.foto || null,
         fonte_cadastro: data.fonte_cadastro,
-        organization_id: tenant.organization.id,
       };
 
       if (cliente) {

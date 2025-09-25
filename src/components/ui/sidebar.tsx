@@ -16,7 +16,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Calendar, Package, Settings, Bus, Car, UserCheck, MessagesSquare, CreditCard, Building2 } from "lucide-react";
+import { Home, Users, Calendar, Package, Settings, Bus, Car, UserCheck, MessagesSquare, CreditCard } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -169,7 +169,7 @@ export default SidebarComponent;
 export function SidebarNav() {
   const location = useLocation();
   const isMobile = useIsMobile();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
 
   const menuItems = [
     {
@@ -208,15 +208,6 @@ export function SidebarNav() {
       path: "/dashboard/pagamentos",
     },
   ];
-
-  // Adicionar item de administração apenas para super admins
-  if (profile?.role === "super_admin") {
-    menuItems.push({
-      title: "Organizações",
-      icon: <Building2 className="h-4 w-4" />,
-      path: "/dashboard/admin/organizations",
-    });
-  }
 
   return (
     <Sheet>

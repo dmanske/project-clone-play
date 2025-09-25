@@ -48,7 +48,6 @@ export const usePasseiosCustos = () => {
       setLoading(true);
       setError(null);
 
-      // Buscar passeios da organização do usuário
       const { data, error: fetchError } = await supabase
         .from('passeios')
         .select('*')

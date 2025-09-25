@@ -1,20 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useTenant } from '@/contexts/TenantContext';
+import { toast } from 'sonner';
 import type { Passeio, UsePasseiosReturn } from '@/types/passeio';
 
 export const usePasseios = (): UsePasseiosReturn => {
   const [passeios, setPasseios] = useState<Passeio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { tenant } = useTenant();
 
   const fetchPasseios = useCallback(async () => {
-    if (!tenant?.organization.id) {
-      setLoading(false);
-      return;
-    }
-    
     try {
       setLoading(true);
       setError(null);
@@ -22,7 +16,6 @@ export const usePasseios = (): UsePasseiosReturn => {
       const { data, error: fetchError } = await supabase
         .from('passeios')
         .select('*')
-        .eq('organization_id', tenant.organization.id)
         .eq('ativo', true)
         .order('categoria', { ascending: true })
         .order('valor', { ascending: false });
@@ -45,7 +38,7 @@ export const usePasseios = (): UsePasseiosReturn => {
     } finally {
       setLoading(false);
     }
-  }, [tenant?.organization.id]);
+  }, []);
 
   useEffect(() => {
     fetchPasseios();

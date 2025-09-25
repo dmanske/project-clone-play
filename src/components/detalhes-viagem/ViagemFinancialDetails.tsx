@@ -1,6 +1,5 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,7 +7,7 @@ import { PlusCircle, DollarSign, TrendingDown, FileText } from 'lucide-react';
 import { Receita, Despesa } from '@/types/financeiro';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate } from '@/utils/formatters';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ReceitaForm } from '@/components/financeiro/receitas/ReceitaForm';
 import { DespesaForm } from '@/components/financeiro/despesas/DespesaForm';
 import { useReceitas } from '@/hooks/financeiro/useReceitas';
@@ -382,9 +381,6 @@ export const ViagemFinancialDetails: React.FC<ViagemFinancialDetailsProps> = ({
       {/* Dialog para adicionar/editar receita */}
       <Dialog open={addReceitaOpen} onOpenChange={setAddReceitaOpen}>
         <DialogContent className="max-w-2xl">
-        <VisuallyHidden.Root>
-          <DialogTitle>Dialog</DialogTitle>
-        </VisuallyHidden.Root>
           <ReceitaForm
             receita={editItem as Receita | undefined}
             onSubmit={editItem ? handleUpdateReceita : handleAddReceita}
@@ -396,9 +392,6 @@ export const ViagemFinancialDetails: React.FC<ViagemFinancialDetailsProps> = ({
       {/* Dialog para adicionar/editar despesa */}
       <Dialog open={addDespesaOpen} onOpenChange={setAddDespesaOpen}>
         <DialogContent className="max-w-2xl">
-        <VisuallyHidden.Root>
-          <DialogTitle>Dialog</DialogTitle>
-        </VisuallyHidden.Root>
           <DespesaForm
             despesa={editItem as Despesa | undefined}
             onSubmit={editItem ? handleUpdateDespesa : handleAddDespesa}

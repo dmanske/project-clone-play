@@ -12,6 +12,9 @@ import { ReportFilters, ReportPreviewData } from '@/types/report-filters';
 import { PassageiroDisplay } from '@/hooks/useViagemDetails';
 import { formatCurrency } from '@/lib/utils';
 import { ReportPreview } from './ReportPreview';
+import { ReportPersonalizationButton } from './ReportPersonalizationButton';
+import { PersonalizationConfig } from '@/types/personalizacao-relatorios';
+import { convertPersonalizationToFilters } from '@/lib/personalizacao/integration';
 
 interface Onibus {
   id: string;
@@ -33,6 +36,8 @@ interface ReportFiltersProps {
   onibusList: Onibus[];
   passeios?: Passeio[];
   previewData: ReportPreviewData;
+  viagemId?: string;
+  viagem?: any; // Dados da viagem
 }
 
 export const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
@@ -41,7 +46,9 @@ export const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
   passageiros = [],
   onibusList = [],
   passeios = [],
-  previewData
+  previewData,
+  viagemId,
+  viagem
 }) => {
   // Verificação de segurança
   if (!filters || !onFiltersChange) {
@@ -97,6 +104,7 @@ export const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
     filters.modoResponsavel ||
     filters.modoPassageiro ||
     filters.modoEmpresaOnibus ||
+    filters.modoTransfer ||
     !filters.mostrarStatusPagamento ||
     !filters.mostrarValorPadrao ||
     !filters.mostrarValoresPassageiros ||
@@ -146,6 +154,7 @@ export const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
       modoResponsavel: false,
       modoPassageiro: false,
       modoEmpresaOnibus: true,
+      modoComprarIngressos: false,
       incluirResumoFinanceiro: false,
       incluirDistribuicaoSetor: false, // Remove distribuição por setor
       mostrarValorPadrao: false,
@@ -160,12 +169,90 @@ export const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
     onFiltersChange(empresaOnibusFilters);
   };
 
+  const applyComprarIngressosMode = () => {
+    const comprarIngressosFilters = {
+      ...filters,
+      modoResponsavel: false,
+      modoPassageiro: false,
+      modoEmpresaOnibus: false,
+      modoComprarIngressos: true,
+      modoComprarPasseios: false,
+      incluirResumoFinanceiro: false,
+      incluirDistribuicaoSetor: false,
+      incluirListaOnibus: false,
+      incluirPassageirosNaoAlocados: false,
+      mostrarValorPadrao: false,
+      mostrarValoresPassageiros: false,
+      mostrarStatusPagamento: false,
+      mostrarTelefone: false,
+      mostrarNomesPasseios: false,
+      mostrarFotoOnibus: false,
+      mostrarNumeroPassageiro: true,
+      agruparPorOnibus: false,
+      setorMaracana: [], // Incluir todos os setores do Maracanã
+    };
+    onFiltersChange(comprarIngressosFilters);
+  };
+
+  const applyComprarPasseiosMode = () => {
+    const comprarPasseiosFilters = {
+      ...filters,
+      modoResponsavel: false,
+      modoPassageiro: false,
+      modoEmpresaOnibus: false,
+      modoComprarIngressos: false,
+      modoComprarPasseios: true,
+      modoTransfer: false,
+      incluirResumoFinanceiro: false,
+      incluirDistribuicaoSetor: false, // Remove distribuição por setor
+      incluirListaOnibus: false,
+      incluirPassageirosNaoAlocados: false,
+      mostrarValorPadrao: false,
+      mostrarValoresPassageiros: false,
+      mostrarStatusPagamento: false,
+      mostrarTelefone: false,
+      mostrarNomesPasseios: true, // Mostrar passeios na lista
+      mostrarFotoOnibus: false,
+      mostrarNumeroPassageiro: true,
+      agruparPorOnibus: false,
+    };
+    onFiltersChange(comprarPasseiosFilters);
+  };
+
+  const applyTransferMode = () => {
+    const transferFilters = {
+      ...filters,
+      modoResponsavel: false,
+      modoPassageiro: false,
+      modoEmpresaOnibus: false,
+      modoComprarIngressos: false,
+      modoComprarPasseios: false,
+      modoTransfer: true,
+      incluirResumoFinanceiro: false,
+      incluirDistribuicaoSetor: false,
+      incluirListaOnibus: false, // Remove lista de ônibus
+      incluirPassageirosNaoAlocados: false,
+      mostrarValorPadrao: false,
+      mostrarValoresPassageiros: false,
+      mostrarStatusPagamento: false,
+      mostrarTelefone: false,
+      mostrarNomesPasseios: true, // Mostrar passeios na lista
+      mostrarFotoOnibus: false,
+      mostrarNumeroPassageiro: true,
+      agruparPorOnibus: true, // Agrupar por ônibus
+    };
+    onFiltersChange(transferFilters);
+  };
+
   const resetToNormalMode = () => {
     const normalFilters = {
       ...filters,
       modoResponsavel: false,
       modoPassageiro: false,
       modoEmpresaOnibus: false,
+      modoComprarIngressos: false,
+      modoComprarPasseios: false,
+      modoTransfer: false,
       incluirResumoFinanceiro: true,
       incluirDistribuicaoSetor: true,
       mostrarValorPadrao: true,
@@ -184,14 +271,54 @@ export const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
       <Card className={
         filters.modoResponsavel ? 'border-orange-200 bg-orange-50' : 
         filters.modoPassageiro ? 'border-blue-200 bg-blue-50' : 
-        filters.modoEmpresaOnibus ? 'border-green-200 bg-green-50' : ''
+        filters.modoEmpresaOnibus ? 'border-green-200 bg-green-50' :
+        filters.modoComprarIngressos ? 'border-purple-200 bg-purple-50' :
+        filters.modoComprarPasseios ? 'border-pink-200 bg-pink-50' :
+        filters.modoTransfer ? 'border-teal-200 bg-teal-50' : ''
       }>
         <CardHeader>
-          <CardTitle className="text-lg">⚡ Filtros Rápidos</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">⚡ Filtros Rápidos</CardTitle>
+            {viagemId && (
+              <ReportPersonalizationButton
+                viagemId={viagemId}
+                currentFilters={filters}
+                onConfigApplied={(config: PersonalizationConfig) => {
+                  // Converter configuração de personalização de volta para filtros
+                  const newFilters = convertPersonalizationToFilters(config);
+                  onFiltersChange({ ...filters, ...newFilters });
+                }}
+                dadosReais={{
+                  viagem: viagem ? {
+                    id: viagem.id,
+                    adversario: viagem.adversario,
+                    dataJogo: viagem.data_jogo,
+                    localJogo: viagem.local_jogo || 'Maracanã',
+                    estadio: viagem.nome_estadio || 'Estádio do Maracanã',
+                    status: viagem.status_viagem,
+                    valorPadrao: viagem.valor_padrao || 0,
+                    setorPadrao: viagem.setor_padrao || 'Norte'
+                  } : {
+                    id: viagemId,
+                    adversario: 'Adversário da Viagem',
+                    dataJogo: new Date().toISOString(),
+                    localJogo: 'Maracanã',
+                    estadio: 'Estádio do Maracanã',
+                    status: 'Confirmada',
+                    valorPadrao: 150,
+                    setorPadrao: 'Norte'
+                  },
+                  passageiros: passageiros || [],
+                  onibus: onibusList || [],
+                  passeios: passeios || []
+                }}
+              />
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            {!filters.modoResponsavel && !filters.modoPassageiro && !filters.modoEmpresaOnibus ? (
+            {!filters.modoResponsavel && !filters.modoPassageiro && !filters.modoEmpresaOnibus && !filters.modoComprarIngressos && !filters.modoComprarPasseios && !filters.modoTransfer ? (
               <>
                 <Button
                   onClick={applyResponsavelMode}
@@ -214,6 +341,27 @@ export const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                 >
                   🚌 Enviar para Empresa de Ônibus
                 </Button>
+                <Button
+                  onClick={applyComprarIngressosMode}
+                  variant="outline"
+                  className="bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700"
+                >
+                  🎫 Comprar Ingressos
+                </Button>
+                <Button
+                  onClick={applyComprarPasseiosMode}
+                  variant="outline"
+                  className="bg-pink-50 hover:bg-pink-100 border-pink-200 text-pink-700"
+                >
+                  🎠 Comprar Passeios
+                </Button>
+                <Button
+                  onClick={applyTransferMode}
+                  variant="outline"
+                  className="bg-teal-50 hover:bg-teal-100 border-teal-200 text-teal-700"
+                >
+                  🚌 Transfer
+                </Button>
               </>
             ) : (
               <div className="flex items-center gap-3">
@@ -232,6 +380,21 @@ export const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                     🚌 Modo: Empresa de Ônibus
                   </Badge>
                 )}
+                {filters.modoComprarIngressos && (
+                  <Badge className="bg-purple-100 text-purple-700 px-3 py-1">
+                    🎫 Modo: Comprar Ingressos
+                  </Badge>
+                )}
+                {filters.modoComprarPasseios && (
+                  <Badge className="bg-pink-100 text-pink-700 px-3 py-1">
+                    🎠 Modo: Comprar Passeios
+                  </Badge>
+                )}
+                {filters.modoTransfer && (
+                  <Badge className="bg-teal-100 text-teal-700 px-3 py-1">
+                    🚌 Modo: Transfer
+                  </Badge>
+                )}
                 <Button
                   onClick={resetToNormalMode}
                   variant="outline"
@@ -239,7 +402,10 @@ export const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
                   className={
                     filters.modoResponsavel ? "text-orange-700 border-orange-300" : 
                     filters.modoPassageiro ? "text-blue-700 border-blue-300" :
-                    filters.modoEmpresaOnibus ? "text-green-700 border-green-300" : ""
+                    filters.modoEmpresaOnibus ? "text-green-700 border-green-300" :
+                    filters.modoComprarIngressos ? "text-purple-700 border-purple-300" :
+                    filters.modoComprarPasseios ? "text-pink-700 border-pink-300" :
+                    filters.modoTransfer ? "text-teal-700 border-teal-300" : ""
                   }
                 >
                   Voltar ao Normal
@@ -304,6 +470,46 @@ export const ReportFiltersComponent: React.FC<ReportFiltersProps> = ({
               <div className="text-sm text-green-700">
                 <p><strong>Colunas exibidas:</strong> Número, Nome, CPF, Data de Nascimento, Local de Embarque</p>
                 <p><strong>Removido:</strong> Informações financeiras, telefone, setor do Maracanã, passeios</p>
+              </div>
+            </div>
+          )}
+
+          {filters.modoComprarIngressos && (
+            <div className="mt-4 p-3 bg-purple-100 rounded-lg">
+              <p className="text-sm text-purple-800 mb-2">
+                <strong>Modo Comprar Ingressos Ativo:</strong> Relatório similar ao sistema de ingressos
+              </p>
+              <div className="text-sm text-purple-700">
+                <p><strong>Inclui:</strong> Logo dos times, total de ingressos, setores do Maracanã</p>
+                <p><strong>Colunas exibidas:</strong> Número, Nome, CPF, Data de Nascimento, Setor</p>
+                <p><strong>Removido:</strong> Informações da viagem, data da viagem, status da viagem</p>
+              </div>
+            </div>
+          )}
+
+          {filters.modoComprarPasseios && (
+            <div className="mt-4 p-3 bg-pink-100 rounded-lg">
+              <p className="text-sm text-pink-800 mb-2">
+                <strong>Modo Comprar Passeios Ativo:</strong> Relatório inteligente com faixas etárias específicas por passeio
+              </p>
+              <div className="text-sm text-pink-700">
+                <p><strong>✨ Novo:</strong> Tipos de Ingresso específicos (Cristo Redentor, Pão de Açúcar, Museu Flamengo)</p>
+                <p><strong>Inclui:</strong> Totais por tipo de ingresso, cores por faixa etária, badges coloridos</p>
+                <p><strong>Colunas:</strong> Número, Nome, CPF, Data Nascimento, Passeio, Tipo de Ingresso</p>
+                <p><strong>Removido:</strong> Total de ingressos, distribuição de setor, informações financeiras</p>
+              </div>
+            </div>
+          )}
+
+          {filters.modoTransfer && (
+            <div className="mt-4 p-3 bg-teal-100 rounded-lg">
+              <p className="text-sm text-teal-800 mb-2">
+                <strong>Modo Transfer Ativo:</strong> Relatório agrupado por ônibus com informações de transfer
+              </p>
+              <div className="text-sm text-teal-700">
+                <p><strong>Inclui:</strong> Passeios & Faixas Etárias, Totais de Passeios, cada ônibus em página separada</p>
+                <p><strong>Colunas exibidas:</strong> Número, Nome, Passeio + Rota, Placa e Motorista</p>
+                <p><strong>Removido:</strong> Lista de ônibus, informações financeiras, distribuição de setor</p>
               </div>
             </div>
           )}

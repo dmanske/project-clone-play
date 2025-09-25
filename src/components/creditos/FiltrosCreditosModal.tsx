@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { X, Filter, RotateCcw } from 'lucide-react';
 import {
   Dialog,

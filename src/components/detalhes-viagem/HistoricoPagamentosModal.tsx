@@ -1,6 +1,5 @@
 // Modal para visualizar histórico de pagamentos de um passageiro
 import React, { useState } from 'react';
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import {
   Dialog,
   DialogContent,

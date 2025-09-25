@@ -1,5 +1,4 @@
 import React from 'react';
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CalendarIcon, Filter, X } from 'lucide-react';

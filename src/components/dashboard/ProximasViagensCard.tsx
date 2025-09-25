@@ -7,21 +7,23 @@ import { CalendarCheck, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface ViagemDashboard {
+interface Viagem {
   id: string;
-  adversario: string | null;
-  data_ida: string;
-  data_volta: string;
-  destino: string;
-  local_jogo: string | null;
-  preco_individual: number;
-  status_viagem: string | null;
-  vagas_disponiveis: number;
+  adversario: string;
+  data_jogo: string;
+  tipo_onibus: string;
+  empresa: string;
+  rota: string;
+  capacidade_onibus: number;
+  status_viagem: string;
+  created_at: string;
+  logo_adversario: string | null;
+  logo_flamengo: string | null;
 }
 
 interface ProximasViagensCardProps {
   isLoading: boolean;
-  proximasViagens: ViagemDashboard[];
+  proximasViagens: Viagem[];
 }
 
 export const ProximasViagensCard = ({
@@ -57,15 +59,20 @@ export const ProximasViagensCard = ({
                   <div className="flex -space-x-2">
                     <div className="h-12 w-12 rounded-full border-2 border-gray-200 bg-white flex items-center justify-center overflow-hidden">
                       <img 
-                        src="/placeholder.svg" 
+                        src={viagem.logo_flamengo || "https://upload.wikimedia.org/wikipedia/commons/4/43/Flamengo_logo.png"} 
                         alt="Flamengo" 
                         className="h-10 w-10 object-contain" 
                       />
                     </div>
                     <div className="h-12 w-12 rounded-full border-2 border-gray-200 bg-white flex items-center justify-center overflow-hidden">
                       <img 
-                        src="/placeholder.svg" 
-                        alt={viagem.adversario || 'Adversário'} 
+                        src={viagem.logo_adversario || `https://via.placeholder.com/150?text=${viagem.adversario.substring(0, 3).toUpperCase()}`} 
+                        alt={viagem.adversario} 
+                        onError={e => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = `https://via.placeholder.com/150?text=${viagem.adversario.substring(0, 3).toUpperCase()}`;
+                        }} 
                         className="h-10 w-10 object-contain" 
                       />
                     </div>
@@ -76,14 +83,14 @@ export const ProximasViagensCard = ({
                     </p>
                     <div className="flex items-center gap-1 text-sm text-gray-600">
                       <CalendarCheck className="h-3.5 w-3.5" />
-                      {formatDate(viagem.data_ida)}
+                      {formatDate(viagem.data_jogo)}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="hidden md:flex items-center gap-1 text-xs text-gray-600">
                     <MapPin className="h-3 w-3" />
-                    <span>{viagem.destino}</span>
+                    <span>{viagem.rota}</span>
                   </div>
                   <Link to={`/dashboard/viagem/${viagem.id}`} className="text-sm text-blue-600 hover:text-blue-700 hover:underline">
                     Detalhes

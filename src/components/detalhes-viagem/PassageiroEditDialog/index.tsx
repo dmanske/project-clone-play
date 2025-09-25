@@ -1,6 +1,5 @@
 
 import React, { useEffect } from "react";
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -41,6 +40,7 @@ import { PasseiosEditSectionSimples } from "./PasseiosEditSectionSimples";
 import { SecaoFinanceiraAvancada } from "./SecaoFinanceiraAvancada";
 import { getSetorLabel, getSetorOptions } from "@/data/estadios";
 import { CIDADES_EMBARQUE_COMPLETA, isCidadeOutra, isCidadePredefinida } from "@/data/cidades";
+import { PassageiroGroupForm } from "../PassageiroGroupForm";
 
 export function PassageiroEditDialog({
   open,
@@ -49,9 +49,23 @@ export function PassageiroEditDialog({
   viagem,
   onSuccess,
 }: PassageiroEditDialogProps) {
+  console.log('🔍 PassageiroEditDialog - Props recebidas:', { open, passageiro, viagem });
+  
+  // ✅ CORREÇÃO: Todos os hooks devem ser chamados SEMPRE, sem condições
   const [isLoading, setIsLoading] = React.useState(false);
   const [refreshKey, setRefreshKey] = React.useState(0);
   const [cidadeEmbarqueCustom, setCidadeEmbarqueCustom] = React.useState("");
+
+  // ✅ CORREÇÃO: Verificação de segurança mais rigorosa para evitar erro React #310
+  const isValidPassageiro = React.useMemo(() => {
+    if (!passageiro) return false;
+    if (!passageiro.viagem_passageiro_id) return false;
+    if (typeof passageiro.viagem_passageiro_id !== 'string') return false;
+    if (passageiro.viagem_passageiro_id === 'undefined') return false;
+    if (passageiro.viagem_passageiro_id === 'null') return false;
+    if (passageiro.viagem_passageiro_id.length < 10) return false;
+    return true;
+  }, [passageiro]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -73,41 +87,84 @@ export function PassageiroEditDialog({
   const desconto = form.watch("desconto");
   const gratuito = form.watch("gratuito");
 
+  // ✅ CORREÇÃO: TODOS os useEffect devem vir ANTES do return condicional
   useEffect(() => {
     const loadPassageiroData = async () => {
-      if (passageiro) {
-        // Carregar dados básicos
-        form.reset({
-          setor_maracana: passageiro.setor_maracana || "",
-          status_pagamento: passageiro.status_pagamento || "Pendente",
-          forma_pagamento: passageiro.forma_pagamento || "",
-          valor: passageiro.valor || 0,
-          desconto: passageiro.desconto || 0,
-          onibus_id: passageiro.onibus_id?.toString() || "",
-          cidade_embarque: passageiro.cidade_embarque || "",
-          observacoes: passageiro.observacoes || "",
-          passeios_selecionados: [],
-          gratuito: passageiro.gratuito || false
-        });
+      try {
+        if (passageiro) {
+          
+          // Carregar dados básicos
+          form.reset({
+            setor_maracana: passageiro.setor_maracana || "",
+            status_pagamento: passageiro.status_pagamento || "Pendente",
+            forma_pagamento: passageiro.forma_pagamento || "",
+            valor: passageiro.valor || 0,
+            desconto: passageiro.desconto || 0,
+            onibus_id: passageiro.onibus_id?.toString() || "",
+            cidade_embarque: passageiro.cidade_embarque || "",
+            observacoes: passageiro.observacoes || "",
+            passeios_selecionados: [],
+            gratuito: false, // Valor padrão, será carregado do banco
+            grupo_nome: passageiro.grupo_nome || null,
+            grupo_cor: passageiro.grupo_cor || null
+          });
 
-        // Carregar passeios selecionados convertendo nomes para IDs
-        if (passageiro.passeios && passageiro.passeios.length > 0) {
-          try {
-            const nomesPasseios = passageiro.passeios.map(p => p.passeio_nome);
-            
-            const { data: passeiosInfo, error } = await supabase
-              .from('passeios')
-              .select('id, nome')
-              .in('nome', nomesPasseios);
-
-            if (!error && passeiosInfo) {
-              const idsPasseios = passeiosInfo.map(p => p.id);
-              form.setValue('passeios_selecionados', idsPasseios);
-            }
-          } catch (error) {
-            console.error('Erro ao carregar passeios selecionados:', error);
+          // Configurar cidade de embarque customizada se necessário
+          if (passageiro.cidade_embarque && isCidadeOutra(passageiro.cidade_embarque)) {
+            setCidadeEmbarqueCustom(passageiro.cidade_embarque);
           }
+
+          // Carregar passeios selecionados convertendo nomes para IDs
+          if (passageiro.passeios && passageiro.passeios.length > 0) {
+            try {
+              // 🔍 [DEBUG] Filtrar apenas passeios válidos (não órfãos)
+              // Buscar passeios válidos da viagem
+              const { data: passeiosViagem, error: viagemError } = await supabase
+                .from('viagem_passeios')
+                .select('passeio_id')
+                .eq('viagem_id', passageiro.viagem_id);
+
+              if (!viagemError && passeiosViagem) {
+                const idsPasseiosValidos = passeiosViagem.map(vp => vp.passeio_id);
+                
+                // Buscar nomes dos passeios válidos
+                const { data: passeiosInfo, error: passeiosError } = await supabase
+                  .from('passeios')
+                  .select('id, nome')
+                  .in('id', idsPasseiosValidos);
+                
+                if (!passeiosError && passeiosInfo) {
+                  const nomesPasseiosValidos = passeiosInfo.map(p => p.nome);
+                  console.log('🔍 [DEBUG] Passeios válidos da viagem:', nomesPasseiosValidos);
+                  
+                  // Filtrar apenas passeios que existem na viagem (não órfãos)
+                  const passeiosValidosDoPassageiro = passageiro.passeios.filter(p => 
+                    nomesPasseiosValidos.includes(p.passeio_nome)
+                  );
+                  
+                  console.log('🔍 [DEBUG] Passeios válidos do passageiro:', passeiosValidosDoPassageiro);
+                  
+                  if (passeiosValidosDoPassageiro.length > 0) {
+                    const nomesPasseios = passeiosValidosDoPassageiro.map(p => p.passeio_nome);
+                    
+                    const passeiosParaFormulario = passeiosInfo.filter(p => 
+                      nomesPasseios.includes(p.nome)
+                    );
+                    
+                    const idsPasseios = passeiosParaFormulario.map(p => p.id);
+                    console.log('🔍 [DEBUG] IDs dos passeios carregados no formulário:', idsPasseios);
+                    form.setValue('passeios_selecionados', idsPasseios);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Erro ao carregar passeios selecionados:', error);
+            }
+          }
+          
         }
+      } catch (error) {
+        console.error('❌ Erro no useEffect do PassageiroEditDialog:', error);
       }
     };
 
@@ -131,10 +188,25 @@ export function PassageiroEditDialog({
     }
   }, [gratuito, passageiro, form]);
 
+  // ✅ CORREÇÃO: Fechar modal se dados inválidos - APÓS TODOS os hooks
+  React.useEffect(() => {
+    if (open && !isValidPassageiro) {
+      console.warn('PassageiroEditDialog: dados inválidos detectados, fechando modal', passageiro);
+      onOpenChange(false);
+    }
+  }, [open, isValidPassageiro, onOpenChange, passageiro]);
+  
+  // ✅ CORREÇÃO: Não renderizar se dados inválidos - APÓS TODOS os hooks
+  if (!isValidPassageiro) {
+    return null;
+  }
+
   const onSubmit = async (values: FormData) => {
-    if (!passageiro?.viagem_passageiro_id) return;
-    setIsLoading(true);
     try {
+      setIsLoading(true);
+      console.log("Salvando passageiro:", values);
+
+      if (!passageiro?.viagem_passageiro_id) return;
       // Se o status for 'Pago', garantir quitação automática
       if (values.status_pagamento === "Pago") {
         // Buscar parcelas atuais do passageiro
@@ -211,12 +283,25 @@ export function PassageiroEditDialog({
           cidade_embarque: values.cidade_embarque,
           observacoes: values.observacoes,
           gratuito: values.gratuito,
+          grupo_nome: values.grupo_nome || null,
+          grupo_cor: values.grupo_cor || null,
         })
         .eq("id", passageiro.viagem_passageiro_id);
       if (error) throw error;
 
       toast.success("Passageiro atualizado com sucesso!");
-      onSuccess();
+      
+      // ✅ CORREÇÃO: Aguardar mais tempo para garantir que todas as operações do banco foram concluídas
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // ✅ CORREÇÃO: Forçar atualização dos dados antes de chamar onSuccess
+      if (onSuccess) {
+        await onSuccess();
+      }
+      
+      // ✅ CORREÇÃO: Aguardar mais um pouco antes de fechar o modal
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       onOpenChange(false);
     } catch (error) {
       console.error("Erro ao atualizar passageiro:", error);
@@ -225,11 +310,6 @@ export function PassageiroEditDialog({
       setIsLoading(false);
     }
   };
-
-  if (!passageiro || !passageiro.viagem_passageiro_id) {
-    console.warn('PassageiroEditDialog: passageiro ou viagem_passageiro_id não fornecido', passageiro);
-    return null;
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -426,13 +506,12 @@ export function PassageiroEditDialog({
                     </FormItem>
                   )}
                 />
-                {/* Seção de Passeios Atualizada */}
-                <PasseiosEditSectionSimples 
+                {/* Seção de Passeios */}
+                <PasseiosEditSectionSimples
                   form={form} 
                   viagemId={passageiro?.viagem_id || ''} 
-                  passageiroId={passageiro?.viagem_passageiro_id || passageiro?.id}
+                  passageiroId={passageiro?.viagem_passageiro_id?.toString() || ''}
                   onPasseiosChange={() => {
-                    // Forçar refresh da seção financeira
                     console.log('🔄 Passeios alterados, atualizando seção financeira...');
                     setRefreshKey(prev => prev + 1);
                   }}
@@ -443,14 +522,13 @@ export function PassageiroEditDialog({
               <div className="space-y-6">
                 {/* Campos do sistema antigo removidos - usando apenas Situação Financeira */}
 
-                {/* Sistema Financeiro Avançado */}
+                {/* Seção Financeira Avançada */}
                 <SecaoFinanceiraAvancada
                   key={refreshKey}
-                  passageiroId={passageiro.viagem_passageiro_id?.toString() || passageiro.id?.toString() || ''}
+                  passageiroId={passageiro.viagem_passageiro_id?.toString() || ''}
                   nomePassageiro={passageiro.nome}
                   onPagamentoRealizado={async () => {
                     console.log('💰 Pagamento realizado, atualizando dados...');
-                    // Chamar onSuccess para atualizar os dados financeiros
                     if (onSuccess) {
                       console.log('🔄 Chamando onSuccess...');
                       await onSuccess();
@@ -460,6 +538,19 @@ export function PassageiroEditDialog({
                 />
                 
                 {/* Sistema de Parcelas Legado removido - usando apenas Situação Financeira Avançada */}
+              </div>
+              
+              {/* Campo de Grupo */}
+              <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <PassageiroGroupForm
+                  viagemId={viagem?.id || ''}
+                  grupoNome={form.watch('grupo_nome') || ''}
+                  grupoCor={form.watch('grupo_cor') || ''}
+                  onChange={(nome, cor) => {
+                    form.setValue('grupo_nome', nome);
+                    form.setValue('grupo_cor', cor);
+                  }}
+                />
               </div>
             </div>
 

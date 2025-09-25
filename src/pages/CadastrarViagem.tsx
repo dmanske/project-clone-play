@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +6,6 @@ import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { PasseiosSection } from "@/components/viagem/PasseiosSection";
-import { OutroPasseioSection } from "@/components/viagem/OutroPasseioSection";
 import { TipoPagamentoSection } from "@/components/viagem/TipoPagamentoSection";
 import type { ViagemFormData } from "@/types/entities";
 import { Button } from "@/components/ui/button";
@@ -16,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { CalendarDays, MapPin, Users, Plus, Trash2 } from "lucide-react";
 import { formatInputDateToISO } from "@/lib/date-utils";
 import { getEstadioByAdversario, getSetorOptions, shouldShowNomeEstadio } from "@/data/estadios";
@@ -42,8 +40,7 @@ const viagemSchema = z.object({
   logo_adversario: z.string().optional(),
   logo_flamengo: z.string().default(LOGO_FLAMENGO_PADRAO),
   passeios_selecionados: z.array(z.string()).default([]),
-  outro_passeio: z.string().optional(),
-  // Novos campos para sistema avançado de pagamento
+
   tipo_pagamento: z.enum(['livre', 'parcelado_flexivel', 'parcelado_obrigatorio']).default('livre'),
   exige_pagamento_completo: z.boolean().default(false),
   dias_antecedencia: z.number().min(1).max(30).default(5),
@@ -110,12 +107,12 @@ const CadastrarViagem = () => {
       capacidade_onibus: "46",
       status_viagem: "Aberta",
       setor_padrao: "Norte",
-
+      nome_estadio: "",
       cidade_embarque: "Blumenau",
       logo_adversario: "",
       logo_flamengo: LOGO_FLAMENGO_PADRAO,
       passeios_selecionados: [],
-      outro_passeio: "",
+  
       // Novos campos para sistema avançado de pagamento
       tipo_pagamento: 'livre',
       exige_pagamento_completo: false,
@@ -141,110 +138,26 @@ const CadastrarViagem = () => {
     const fetchAdversarios = async () => {
       try {
         setIsLoadingAdversarios(true);
+        console.log("Iniciando carregamento de adversários...");
         
-        // Verificar se há usuário autenticado
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.error('Usuário não autenticado');
-          toast.error('Usuário não autenticado. Faça login novamente.');
-          return;
-        }
-        
-        console.log('Usuário autenticado:', user.id);
-        
-        // Buscar organization_id do usuário
-        let profile = null;
-        let profileError = null;
-        
-        try {
-          // Tentar buscar do contexto de auth primeiro
-          const { data: session } = await supabase.auth.getSession();
-          if (session?.session?.user?.user_metadata?.organization_id) {
-            profile = { organization_id: session.session.user.user_metadata.organization_id };
-          } else {
-            // Não há tabela profiles disponível, continuar sem filtro de organização
-            console.log('Organization_id não encontrado no contexto de auth, carregando todos os adversários');
-            profile = { organization_id: null };
-          }
-        } catch (err) {
-          profileError = err;
-        }
-        
-        if (profileError) {
-          console.error('Erro ao buscar perfil do usuário:', profileError);
-          // Tentar buscar adversários sem filtro de organização como fallback
-          console.log('Tentando buscar adversários sem filtro de organização...');
-          
-          const { data, error } = await supabase
-            .from("adversarios")
-            .select("*")
-            .neq("nome", "Flamengo")
-            .order("nome");
-            
-          if (error) {
-            console.error("Erro ao carregar adversários (fallback):", error);
-            toast.error(`Erro ao carregar adversários: ${error.message}`);
-          } else if (data && data.length > 0) {
-            console.log(`${data.length} adversários carregados (fallback):`, data.map(a => a.nome));
-            setAdversarios(data);
-            toast.warning('Adversários carregados sem filtro de organização');
-          } else {
-            toast.error("Nenhum adversário encontrado.");
-          }
-          return;
-        }
-        
-        if (!profile || !profile.organization_id) {
-          console.error('Usuário sem organização associada');
-          // Tentar buscar adversários sem filtro de organização como fallback
-          console.log('Usuário sem organização, tentando buscar todos os adversários...');
-          
-          const { data, error } = await supabase
-            .from("adversarios")
-            .select("*")
-            .neq("nome", "Flamengo")
-            .order("nome");
-            
-          if (error) {
-            console.error("Erro ao carregar adversários (fallback):", error);
-            toast.error(`Erro ao carregar adversários: ${error.message}`);
-          } else if (data && data.length > 0) {
-            console.log(`${data.length} adversários carregados (fallback):`, data.map(a => a.nome));
-            setAdversarios(data);
-            toast.warning('Adversários carregados sem filtro de organização');
-          } else {
-            toast.error("Nenhum adversário encontrado.");
-          }
-          return;
-        }
-        
-        console.log('Buscando todos os adversários disponíveis...');
-        
-        // Buscar todos os adversários (temporário - até corrigir organização)
-        let { data, error } = await supabase
+        // Usar uma consulta mais simples para testar
+        const { data, error } = await supabase
           .from("adversarios")
           .select("*")
-          .neq("nome", "Flamengo")
+          .neq("nome", "Flamengo") // Excluir o Flamengo da lista
           .order("nome");
           
         if (error) {
           console.error("Erro ao carregar adversários:", error);
-          toast.error(`Erro ao carregar adversários: ${error.message}`);
-        } else if (data && data.length > 0) {
-          console.log(`${data.length} adversários carregados:`, data.map(a => a.nome));
+          toast.error("Erro ao carregar adversários");
+        } else if (data) {
+          console.log("Adversários carregados:", data);
           setAdversarios(data);
-          
-          // Mostrar aviso sobre organização
-          if (profile.organization_id) {
-            toast.warning('Mostrando adversários de todas as organizações (configuração temporária)');
-          }
         } else {
-          console.log('Nenhum adversário encontrado');
-          toast.error("Nenhum adversário encontrado.");
+          console.log("Nenhum adversário encontrado");
         }
       } catch (err) {
         console.error("Exceção ao carregar adversários:", err);
-        toast.error(`Exceção: ${err.message}`);
       } finally {
         setIsLoadingAdversarios(false);
       }
@@ -280,10 +193,18 @@ const CadastrarViagem = () => {
     form.setValue("capacidade_onibus", totalCapacidade.toString());
   }, [onibusItems, form]);
 
-  // Atualizar setor padrão baseado no local do jogo
+  // Atualizar setor padrão e nome do estádio baseado no adversário e local do jogo
   useEffect(() => {
     const adversario = form.watch("adversario");
     const localJogo = form.watch("local_jogo");
+    
+    // Auto-preencher nome do estádio baseado no adversário
+    if (adversario && localJogo !== "Rio de Janeiro") {
+      const estadio = getEstadioByAdversario(adversario);
+      form.setValue("nome_estadio", estadio);
+    } else {
+      form.setValue("nome_estadio", "");
+    }
     
     // Atualizar opções de setor baseado no local do jogo
     const setorAtual = form.watch("setor_padrao");
@@ -367,18 +288,18 @@ const CadastrarViagem = () => {
         .insert({
           adversario: data.adversario,
           data_jogo: dataJogoFormatted,
-          data_ida: formatInputDateToISO(data.data_saida),
+          data_saida: formatInputDateToISO(data.data_saida),
           local_jogo: data.local_jogo,
           valor_padrao: data.valor_padrao ? parseFloat(data.valor_padrao) : null,
           capacidade_onibus: parseInt(data.capacidade_onibus),
           status_viagem: data.status_viagem,
-          // setor_padrao removido - campo não existe no schema
-
+          setor_padrao: data.setor_padrao,
+          nome_estadio: data.nome_estadio || null,
           cidade_embarque: data.cidade_embarque,
           logo_adversario: data.logo_adversario,
           logo_flamengo: data.logo_flamengo || LOGO_FLAMENGO_PADRAO,
           passeios_pagos: [], // Manter compatibilidade, mas usar nova estrutura
-          outro_passeio: data.outro_passeio,
+
           tipo_onibus: onibusItems[0]?.tipo_onibus || "",
           empresa: onibusItems[0]?.empresa || "",
           // Novos campos para sistema avançado de pagamento
@@ -398,19 +319,38 @@ const CadastrarViagem = () => {
           .from("viagem_onibus")
           .insert({
             viagem_id: viagemData.id,
-            onibus_id: onibus.onibus_id,
+            tipo_onibus: onibus.tipo_onibus,
+            empresa: onibus.empresa,
             capacidade_onibus: parseInt(onibus.capacidade_onibus),
             lugares_extras: parseInt(onibus.lugares_extras) || 0,
+            numero_identificacao: onibus.numero_identificacao,
           });
 
         if (onibusError) throw onibusError;
       }
 
-      // Salvar relacionamentos de passeios selecionados - funcionalidade desabilitada
-      // A tabela de passeios não existe no schema atual
+      // Salvar relacionamentos de passeios selecionados
       if (data.passeios_selecionados && data.passeios_selecionados.length > 0) {
-        console.log('Passeios selecionados:', data.passeios_selecionados);
-        // TODO: Implementar quando a tabela de passeios for criada
+        // Buscar os passeios para obter os valores atuais
+        const { data: passeiosData, error: passeiosError } = await supabase
+          .from('passeios')
+          .select('id, valor')
+          .in('id', data.passeios_selecionados);
+
+        if (passeiosError) throw passeiosError;
+
+        // Criar relacionamentos viagem-passeios
+        const viagemPasseios = passeiosData.map(passeio => ({
+          viagem_id: viagemData.id,
+          passeio_id: passeio.id,
+          valor_cobrado: passeio.valor
+        }));
+
+        const { error: viagemPasseiosError } = await supabase
+          .from('viagem_passeios')
+          .insert(viagemPasseios);
+
+        if (viagemPasseiosError) throw viagemPasseiosError;
       }
 
       toast.success("Viagem cadastrada com sucesso!");
@@ -433,9 +373,6 @@ const CadastrarViagem = () => {
       {/* Diálogo para selecionar logo do adversário */}
       <Dialog open={logoDialogOpen} onOpenChange={setLogoDialogOpen}>
         <DialogContent className="max-w-3xl">
-        <VisuallyHidden.Root>
-          <DialogTitle>Dialog</DialogTitle>
-        </VisuallyHidden.Root>
           <DialogHeader>
             <CardTitle>Selecionar Adversário e Logo</CardTitle>
           </DialogHeader>
@@ -753,7 +690,7 @@ const CadastrarViagem = () => {
                           <FormControl>
                             <Input 
                               placeholder="URL do logo (opcional)" 
-                              {...field}
+                              {...field} 
                               value={field.value || ""}
                               onChange={(e) => {
                                 field.onChange(e.target.value);
@@ -850,7 +787,28 @@ const CadastrarViagem = () => {
                   )}
                 />
 
-
+                {/* Campo Nome do Estádio - só aparece para jogos fora do Rio */}
+                {shouldShowNomeEstadio(form.watch("local_jogo")) && (
+                  <FormField
+                    control={form.control}
+                    name="nome_estadio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Estádio</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ex: Arena do Grêmio, Estádio Beira-Rio"
+                            {...field}
+                          />
+                        </FormControl>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Preenchido automaticamente para Grêmio e Internacional
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}
@@ -905,7 +863,7 @@ const CadastrarViagem = () => {
 
                 <PasseiosSection form={form} />
 
-                <OutroPasseioSection form={form} />
+
 
                 {/* Seção de Tipo de Pagamento */}
                 <TipoPagamentoSection

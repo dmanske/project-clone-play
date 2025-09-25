@@ -21,7 +21,7 @@ export interface Viagem {
   local_jogo?: string;
   nome_estadio?: string | null;
   passeios_pagos?: string[];
-  outro_passeio?: string | null;
+
   // Novos campos do sistema avançado de pagamento
   tipo_pagamento?: 'livre' | 'parcelado_flexivel' | 'parcelado_obrigatorio';
   exige_pagamento_completo?: boolean;
@@ -194,12 +194,20 @@ export function useViagemDetails(viagemId: string | undefined) {
       }
     };
 
-    console.log('🎧 [useViagemDetails] Registrando listener para viagemPassageiroRemovido, viagem:', viagemId);
+    const handlePassageiroTrocado = (event: CustomEvent) => {
+      console.log('🔄 [useViagemDetails] Evento de troca de passageiro recebido:', event.detail);
+      console.log('🔄 [useViagemDetails] Recarregando dados da viagem:', viagemId);
+      fetchPassageiros(viagemId);
+    };
+
+    console.log('🎧 [useViagemDetails] Registrando listeners para eventos, viagem:', viagemId);
     window.addEventListener('viagemPassageiroRemovido', handleViagemPassageiroRemovido as EventListener);
+    window.addEventListener('passageiroTrocado', handlePassageiroTrocado as EventListener);
     
     return () => {
-      console.log('🧹 [useViagemDetails] Removendo listener para viagemPassageiroRemovido');
+      console.log('🧹 [useViagemDetails] Removendo listeners');
       window.removeEventListener('viagemPassageiroRemovido', handleViagemPassageiroRemovido as EventListener);
+      window.removeEventListener('passageiroTrocado', handlePassageiroTrocado as EventListener);
     };
   }, [viagemId]);
 
@@ -357,21 +365,60 @@ export function useViagemDetails(viagemId: string | undefined) {
     }
 
     try {
-      const { data, error } = await supabase
+      console.log('🔍 Buscando ônibus para viagem:', viagemId);
+      
+      // Primeiro, buscar dados básicos dos ônibus
+      const { data: onibusData, error: onibusError } = await supabase
         .from("viagem_onibus")
         .select("*")
         .eq("viagem_id", viagemId);
 
-      if (error) throw error;
+      if (onibusError) {
+        console.error('❌ Erro ao buscar ônibus:', onibusError);
+        throw onibusError;
+      }
 
-      if (data && data.length > 0) {
-        setOnibusList(data as Onibus[]);
+      console.log('✅ Dados dos ônibus carregados:', onibusData?.length || 0);
+
+      if (onibusData && onibusData.length > 0) {
+        // Buscar dados de transfer separadamente
+        const onibusIds = onibusData.map(o => o.id);
+        const { data: transferData, error: transferError } = await supabase
+          .from("transfer_data_simple")
+          .select("viagem_onibus_id, nome_tour, rota, placa, motorista")
+          .in("viagem_onibus_id", onibusIds);
+
+        if (transferError) {
+          console.warn('⚠️ Erro ao buscar dados de transfer (não crítico):', transferError);
+        }
+
+        console.log('📋 Dados de transfer carregados:', transferData?.length || 0);
+
+        // Mapear dados de transfer para cada ônibus
+        const onibusComTransfer = onibusData.map(onibus => {
+          const transfer = transferData?.find(t => t.viagem_onibus_id === onibus.id);
+          return {
+            ...onibus,
+            nome_tour_transfer: transfer?.nome_tour || null,
+            rota_transfer: transfer?.rota || null,
+            placa_transfer: transfer?.placa || null,
+            motorista_transfer: transfer?.motorista || null
+          };
+        });
+        
+        console.log('🚌 Ônibus finais com transfer:', onibusComTransfer);
+        
+        setOnibusList(onibusComTransfer as Onibus[]);
         // Seleciona o primeiro ônibus por padrão
-        setSelectedOnibusId(data[0].id);
+        setSelectedOnibusId(onibusData[0].id);
+      } else {
+        console.log('⚠️ Nenhum ônibus encontrado para esta viagem');
+        setOnibusList([]);
       }
     } catch (err) {
-      console.error("Erro ao buscar ônibus:", err);
+      console.error("❌ Erro ao buscar ônibus:", err);
       toast.error("Erro ao carregar dados dos ônibus");
+      setOnibusList([]);
     }
   };
 
@@ -395,9 +442,86 @@ export function useViagemDetails(viagemId: string | undefined) {
       console.log('🚀 DEBUG: Executando query para viagemId:', viagemId);
       console.log('🚀 DEBUG: Iniciando query Supabase...');
 
-      const { data, error } = await supabase
-        .from("viagem_passageiros")
-        .select(`
+      // Primeiro, verificar se as colunas de grupo existem
+      let temColunaGrupo = false;
+      try {
+        const { data: testData, error: testError } = await supabase
+          .from("viagem_passageiros")
+          .select("grupo_nome, grupo_cor")
+          .limit(1);
+        
+        if (!testError) {
+          temColunaGrupo = true;
+          console.log('✅ Colunas de grupo detectadas no banco');
+        }
+      } catch (err) {
+        console.log('⚠️ Colunas de grupo não existem ainda no banco');
+      }
+
+      // Query base
+      let selectQuery = `
+        id,
+        viagem_id,
+        cliente_id,
+        setor_maracana,
+        status_pagamento,
+        forma_pagamento,
+        valor,
+        desconto,
+        created_at,
+        onibus_id,
+        cidade_embarque,
+        observacoes,
+        is_responsavel_onibus,
+        pago_por_credito,
+        credito_origem_id,
+        valor_credito_utilizado,
+        clientes!viagem_passageiros_cliente_id_fkey (
+          id,
+          nome,
+          telefone,
+          email,
+          cpf,
+          cidade,
+          estado,
+          endereco,
+          numero,
+          bairro,
+          cep,
+          complemento,
+          data_nascimento,
+          passeio_cristo,
+          foto
+        ),
+        viagem_passageiros_parcelas (
+          id,
+          valor_parcela,
+          forma_pagamento,
+          data_pagamento,
+          observacoes
+        ),
+        passageiro_passeios (
+          passeio_nome,
+          status,
+          valor_cobrado,
+          passeio:passeios!passeio_id (
+            nome,
+            valor,
+            categoria
+          )
+        ),
+        credito_origem:cliente_creditos!credito_origem_id (
+          id,
+          valor_credito,
+          data_pagamento,
+          cliente:clientes!cliente_id (
+            nome
+          )
+        )`;
+
+      // Adicionar campos de grupo se existirem
+      if (temColunaGrupo) {
+        selectQuery = `
           id,
           viagem_id,
           cliente_id,
@@ -414,6 +538,8 @@ export function useViagemDetails(viagemId: string | undefined) {
           pago_por_credito,
           credito_origem_id,
           valor_credito_utilizado,
+          grupo_nome,
+          grupo_cor,
           clientes!viagem_passageiros_cliente_id_fkey (
             id,
             nome,
@@ -441,7 +567,12 @@ export function useViagemDetails(viagemId: string | undefined) {
           passageiro_passeios (
             passeio_nome,
             status,
-            valor_cobrado
+            valor_cobrado,
+            passeio:passeios!passeio_id (
+              nome,
+              valor,
+              categoria
+            )
           ),
           credito_origem:cliente_creditos!credito_origem_id (
             id,
@@ -450,8 +581,12 @@ export function useViagemDetails(viagemId: string | undefined) {
             cliente:clientes!cliente_id (
               nome
             )
-          )
-        `)
+          )`;
+      }
+
+      const { data, error } = await supabase
+        .from("viagem_passageiros")
+        .select(selectQuery)
         .eq("viagem_id", viagemId);
 
       console.log('🚀 DEBUG: Resultado da query:', {
@@ -472,10 +607,10 @@ export function useViagemDetails(viagemId: string | undefined) {
         primeiroPassageiro: data?.[0],
         passageirosComPasseios: data?.filter(p => p.passageiro_passeios?.length > 0).length || 0,
         exemploPasseios: data?.[0]?.passageiro_passeios,
-        todosPasseios: data?.map(p => ({
+        todosPasseios: data?.map((p: any) => ({
           nome: p.clientes?.nome,
           passeios: p.passageiro_passeios?.length || 0
-        }))
+        })) || []
       });
 
       // Formatar os dados para exibição com pré-processamento para busca
@@ -532,6 +667,9 @@ export function useViagemDetails(viagemId: string | undefined) {
           credito_origem_id: item.credito_origem_id,
           valor_credito_utilizado: item.valor_credito_utilizado || 0,
           credito_origem: item.credito_origem,
+          // Campos de grupo (vindos do banco se existirem)
+          grupo_nome: temColunaGrupo ? (item.grupo_nome || null) : null,
+          grupo_cor: temColunaGrupo ? (item.grupo_cor || null) : null,
           passeios: passeios,
           // Campos para busca otimizada
           searchableText,

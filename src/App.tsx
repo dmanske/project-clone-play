@@ -7,15 +7,11 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // Auth
-import ForgotPassword from "@/pages/ForgotPassword";
-import ResetPassword from "@/pages/ResetPassword";
 import Login from "@/pages/Login";
 import Cadastro from "@/pages/Cadastro";
-import Onboarding from "@/pages/Onboarding";
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import NotFound from '@/pages/NotFound';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { TenantProvider } from '@/contexts/TenantContext';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
 // Dashboard Layout
@@ -30,6 +26,9 @@ import CadastrarViagem from "@/pages/CadastrarViagem";
 import EditarViagem from "@/pages/EditarViagem";
 import DetalhesViagem from '@/pages/DetalhesViagem';
 import ListaPresenca from '@/pages/ListaPresenca';
+import ListaPresencaOnibus from '@/pages/ListaPresencaOnibus';
+import ListaPresencaPublica from '@/pages/ListaPresencaPublica';
+import ListaPresencaOnibusPublica from '@/pages/ListaPresencaOnibusPublica';
 import Onibus from '@/pages/Onibus';
 import CadastrarOnibus from '@/pages/CadastrarOnibus';
 import EditarOnibus from '@/pages/EditarOnibus';
@@ -83,17 +82,11 @@ import Creditos from "@/pages/Creditos";
 // Import Sistema de Configuração de Passeios
 import ConfiguracaoPasseios from "@/pages/ConfiguracaoPasseios";
 
-// Import página de administração de organizações
-import AdminOrganizations from "@/pages/AdminOrganizations";
-
-// Import página de configurações da organização
-import OrganizationSettings from "@/pages/OrganizationSettings";
-
-// Import Super Admin Dashboard
-import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
-
-// Import User Management
-import UserManagement from "@/pages/UserManagement";
+// Import Sistema de Fornecedores
+import Fornecedores from "@/pages/Fornecedores";
+import CadastrarFornecedor from "@/pages/CadastrarFornecedor";
+import EditarFornecedor from "@/pages/EditarFornecedor";
+import FornecedorDetalhes from "@/pages/FornecedorDetalhes";
 
 const queryClient = new QueryClient()
 
@@ -102,8 +95,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <TenantProvider>
-            <SidebarProvider>
+          <SidebarProvider>
             <Routes>
               {/* Landing Page como página inicial */}
               <Route path="/" element={<Index />} />
@@ -123,12 +115,13 @@ function App() {
               <Route path="/viagem/:id/test" element={<MeuOnibusTest />} />
               <Route path="/viagem/:id/simple" element={<MeuOnibusSimple />} />
               
+              {/* Páginas públicas Lista de Presença */}
+              <Route path="/lista-presenca/:viagemId" element={<ListaPresencaPublica />} />
+              <Route path="/lista-presenca/:viagemId/onibus/:onibusId" element={<ListaPresencaOnibusPublica />} />
+              
               {/* Auth routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Cadastro />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/cadastro-publico" element={<CadastroPublico />} />
               
               {/* Rotas de pagamento */}
@@ -144,9 +137,12 @@ function App() {
                   <Route path="cadastrar-cliente" element={<CadastrarCliente />} />
                   <Route path="viagens" element={<Viagens />} />
                   <Route path="viagem/:id" element={<DetalhesViagem />} />
+                  <Route path="viagens/:viagemId/detalhes" element={<DetalhesViagem />} />
                   <Route path="viagem/:id/editar" element={<EditarViagem />} />
                   <Route path="cadastrar-viagem" element={<CadastrarViagem />} />
                   <Route path="presenca/:viagemId" element={<ListaPresenca />} />
+                  <Route path="viagens/:viagemId/lista-presenca/:onibusId" element={<ListaPresencaOnibus />} />
+
                   <Route path="cadastrar-passageiro" element={<CadastrarPassageiro />} />
                   <Route path="cadastrar-passageiro-simples" element={<CadastrarPassageiroSimples />} />
                   {/* Route demo-parcelamento removida - sistema desabilitado */}
@@ -173,6 +169,12 @@ function App() {
                   {/* Sistema de Configuração de Passeios */}
                   <Route path="configuracao-passeios" element={<ConfiguracaoPasseios />} />
                   
+                  {/* Sistema de Fornecedores */}
+                  <Route path="fornecedores" element={<Fornecedores />} />
+                  <Route path="fornecedores/:id" element={<FornecedorDetalhes />} />
+                  <Route path="fornecedores/cadastrar" element={<CadastrarFornecedor />} />
+                  <Route path="fornecedores/:id/editar" element={<EditarFornecedor />} />
+                  
                   {/* Rotas Financeiras */}
                   <Route path="financeiro" element={<FinanceiroGeral />} />
                   <Route path="financeiro/geral" element={<FinanceiroGeral />} />
@@ -184,25 +186,12 @@ function App() {
                   
                   {/* Configurações da Empresa */}
                   <Route path="empresa/configuracoes" element={<EmpresaConfigPage />} />
-                  
-                  {/* Administração de Organizações */}
-                  <Route path="admin/organizations" element={<AdminOrganizations />} />
-                  
-                  {/* Configurações da Organização */}
-                  <Route path="organization/settings" element={<OrganizationSettings />} />
-                  
-                  {/* Super Admin Dashboard */}
-                  <Route path="super-admin" element={<SuperAdminDashboard />} />
-                  
-                  {/* User Management */}
-                  <Route path="usuarios" element={<UserManagement />} />
                 </Route>
               </Route>
 
               <Route path="*" element={<NotFound />} />
             </Routes>
-            </SidebarProvider>
-          </TenantProvider>
+          </SidebarProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

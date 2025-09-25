@@ -27,6 +27,9 @@ export interface ReportFilters {
   modoResponsavel: boolean; // Remove informações financeiras
   modoPassageiro: boolean; // Lista simplificada para passageiros
   modoEmpresaOnibus: boolean; // Lista para empresa de ônibus (CPF, data nascimento, embarque)
+  modoComprarIngressos: boolean; // Lista para compra de ingressos (similar ao sistema de ingressos)
+  modoComprarPasseios: boolean; // Lista para compra de passeios (foco em passeios e faixas etárias)
+  modoTransfer: boolean; // Lista para transfer (agrupado por ônibus com rota, placa e motorista)
   mostrarStatusPagamento: boolean; // Para modo responsável
   mostrarValorPadrao: boolean; // Mostrar valor padrão nas informações da viagem
   mostrarValoresPassageiros: boolean; // Mostrar valores na lista de passageiros
@@ -58,6 +61,9 @@ export const defaultReportFilters: ReportFilters = {
   modoResponsavel: false,
   modoPassageiro: false,
   modoEmpresaOnibus: false,
+  modoComprarIngressos: false,
+  modoComprarPasseios: false,
+  modoTransfer: false,
   mostrarStatusPagamento: true,
   mostrarValorPadrao: true,
   mostrarValoresPassageiros: true,
@@ -95,6 +101,8 @@ export const empresaOnibusModeFilters: Partial<ReportFilters> = {
   modoEmpresaOnibus: true,
   modoResponsavel: false,
   modoPassageiro: false,
+  modoComprarIngressos: false,
+  modoComprarPasseios: false,
   incluirResumoFinanceiro: false,
   incluirDistribuicaoSetor: false, // Remove distribuição por setor
   mostrarValorPadrao: false,
@@ -105,4 +113,70 @@ export const empresaOnibusModeFilters: Partial<ReportFilters> = {
   mostrarFotoOnibus: false,
   mostrarNumeroPassageiro: true,
   agruparPorOnibus: true,
+};
+
+// Preset para modo comprar ingressos
+export const comprarIngressosModeFilters: Partial<ReportFilters> = {
+  modoComprarIngressos: true,
+  modoResponsavel: false,
+  modoPassageiro: false,
+  modoEmpresaOnibus: false,
+  modoComprarPasseios: false,
+  incluirResumoFinanceiro: false,
+  incluirDistribuicaoSetor: false,
+  incluirListaOnibus: false,
+  incluirPassageirosNaoAlocados: false,
+  mostrarValorPadrao: false,
+  mostrarValoresPassageiros: false,
+  mostrarStatusPagamento: false,
+  mostrarTelefone: false,
+  mostrarNomesPasseios: false,
+  mostrarFotoOnibus: false,
+  mostrarNumeroPassageiro: true,
+  agruparPorOnibus: false,
+  setorMaracana: [], // Incluir todos os setores do Maracanã
+};
+
+// Preset para modo comprar passeios
+export const comprarPasseiosModeFilters: Partial<ReportFilters> = {
+  modoComprarPasseios: true,
+  modoResponsavel: false,
+  modoPassageiro: false,
+  modoEmpresaOnibus: false,
+  modoComprarIngressos: false,
+  modoTransfer: false,
+  incluirResumoFinanceiro: false,
+  incluirDistribuicaoSetor: false, // Remove distribuição por setor
+  incluirListaOnibus: false,
+  incluirPassageirosNaoAlocados: false,
+  mostrarValorPadrao: false,
+  mostrarValoresPassageiros: false,
+  mostrarStatusPagamento: false,
+  mostrarTelefone: false,
+  mostrarNomesPasseios: true, // Mostrar passeios na lista
+  mostrarFotoOnibus: false,
+  mostrarNumeroPassageiro: true,
+  agruparPorOnibus: false,
+};
+
+// Preset para modo transfer
+export const transferModeFilters: Partial<ReportFilters> = {
+  modoTransfer: true,
+  modoResponsavel: false,
+  modoPassageiro: false,
+  modoEmpresaOnibus: false,
+  modoComprarIngressos: false,
+  modoComprarPasseios: false,
+  incluirResumoFinanceiro: false,
+  incluirDistribuicaoSetor: false,
+  incluirListaOnibus: false, // Remove lista de ônibus
+  incluirPassageirosNaoAlocados: false,
+  mostrarValorPadrao: false,
+  mostrarValoresPassageiros: false,
+  mostrarStatusPagamento: false,
+  mostrarTelefone: false,
+  mostrarNomesPasseios: true, // Mostrar passeios na lista
+  mostrarFotoOnibus: false,
+  mostrarNumeroPassageiro: true,
+  agruparPorOnibus: true, // Agrupar por ônibus
 };

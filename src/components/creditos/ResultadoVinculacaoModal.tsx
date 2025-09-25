@@ -1,5 +1,4 @@
 import React from 'react';
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 import {
   Dialog,

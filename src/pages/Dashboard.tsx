@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useBusStats } from "@/hooks/useBusStats";
-import { useTenant } from "@/contexts/TenantContext";
-import { Tables } from "@/integrations/supabase/types";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ModernStatCard } from "@/components/ui/modern-stat-card";
 import { ModernCard } from "@/components/ui/modern-card";
@@ -28,25 +26,26 @@ import { OcupacaoViagensChart } from "@/components/dashboard/graficos/OcupacaoVi
 import { ClientesPorCidadePieChart } from "@/components/dashboard/graficos/ClientesPorCidadePieChart";
 import { ClientesPorMesChart } from "@/components/dashboard/graficos/ClientesPorMesChart";
 
-interface ViagemDashboard {
+interface Viagem {
   id: string;
-  adversario: string | null;
-  data_ida: string;
-  data_volta: string;
-  destino: string;
-  local_jogo: string | null;
-  preco_individual: number;
-  status_viagem: string | null;
-  vagas_disponiveis: number;
+  adversario: string;
+  data_jogo: string;
+  tipo_onibus: string;
+  empresa: string;
+  rota: string;
+  capacidade_onibus: number;
+  status_viagem: string;
+  created_at: string;
+  logo_adversario: string | null;
+  logo_flamengo: string | null;
 }
 
 const Dashboard = () => {
-  const { tenant } = useTenant();
   const [clientCount, setClientCount] = useState<number>(0);
   const [viagemCount, setViagemCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [flamengoLogo, setFlamengoLogo] = useState<string>("https://upload.wikimedia.org/wikipedia/commons/4/43/Flamengo_logo.png");
-  const [proximasViagens, setProximasViagens] = useState<ViagemDashboard[]>([]);
+  const [proximasViagens, setProximasViagens] = useState<Viagem[]>([]);
   const [monthlyRevenue, setMonthlyRevenue] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [filteredData, setFilteredData] = useState({
@@ -73,19 +72,13 @@ const Dashboard = () => {
   
   useEffect(() => {
     const fetchCounts = async () => {
-      if (!tenant?.organization?.id) {
-        setIsLoading(false);
-        return;
-      }
-
       try {
         setIsLoading(true);
         
         // Fetch client count
         const { count: clientsCount, error: clientError } = await supabase
           .from('clientes')
-          .select('*', { count: 'exact', head: true })
-          .eq('organization_id', tenant.organization.id);
+          .select('*', { count: 'exact', head: true });
         
         if (clientError) {
           console.error('Erro ao buscar contagem de clientes:', clientError);
@@ -108,9 +101,9 @@ const Dashboard = () => {
         const today = new Date().toISOString();
         const { data: upcomingTrips, error: upcomingError } = await supabase
           .from('viagens')
-          .select('id, adversario, data_ida, data_volta, destino, local_jogo, preco_individual, status_viagem, vagas_disponiveis')
-          .gte('data_ida', today)
-          .order('data_ida', { ascending: true })
+          .select('*')
+          .gte('data_jogo', today)
+          .order('data_jogo', { ascending: true })
           .limit(3);
         
         if (!upcomingError && upcomingTrips) {
@@ -119,9 +112,22 @@ const Dashboard = () => {
           console.error('Erro ao buscar próximas viagens:', upcomingError);
         }
         
-        // Use default Flamengo logo (system_config table not available in current schema)
-        // TODO: Implement organization-specific logo from organizations table
-        setFlamengoLogo(null);
+        // Fetch Flamengo logo from system_config (opcional)
+        try {
+          const { data: logoData, error: logoError } = await supabase
+            .from('system_config')
+            .select('value')
+            .eq('key', 'flamengo_logo')
+            .maybeSingle(); // Use maybeSingle() instead of single() to handle no results
+          
+          if (!logoError && logoData && logoData.value) {
+            setFlamengoLogo(logoData.value);
+          }
+          // Silently use default logo if not found in database
+        } catch (error) {
+          // Silently use default logo if there's any error
+          console.debug('Logo do Flamengo não encontrado na configuração, usando padrão');
+        }
         
         // Fetch current month's revenue
         const now = new Date();
@@ -130,15 +136,16 @@ const Dashboard = () => {
         
         const { data: revenueData, error: revenueError } = await supabase
           .from('viagem_passageiros')
-          .select('valor_pago')
-          .eq('organization_id', tenant.organization.id)
+          .select('valor, desconto')
           .gte('created_at', firstDayOfMonth)
           .lte('created_at', lastDayOfMonth)
           .eq('status_pagamento', 'Pago');
         
         if (!revenueError && revenueData) {
-          const totalRevenue = revenueData.reduce((sum: number, item: any) => {
-            return sum + (item.valor_pago || 0);
+          const totalRevenue = revenueData.reduce((sum, item) => {
+            const valor = item.valor || 0;
+            const desconto = item.desconto || 0;
+            return sum + (valor - desconto);
           }, 0);
           
           setMonthlyRevenue(totalRevenue);
@@ -154,7 +161,7 @@ const Dashboard = () => {
     };
     
     fetchCounts();
-  }, [tenant?.organization?.id]);
+  }, []);
 
   // Função para lidar com mudanças nos filtros
   const handleFiltersChange = async (filters: any) => {
@@ -168,8 +175,7 @@ const Dashboard = () => {
       // Buscar dados filtrados
       let clientesQuery = supabase
         .from('clientes')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', tenant?.organization?.id);
+        .select('*', { count: 'exact', head: true });
       
       if (startDate && endDate) {
         clientesQuery = clientesQuery.gte('created_at', startDate).lte('created_at', endDate);
@@ -191,8 +197,7 @@ const Dashboard = () => {
 
       let receitaQuery = supabase
         .from('viagem_passageiros')
-        .select('valor_pago')
-        .eq('organization_id', tenant?.organization?.id);
+        .select('valor, desconto');
       
       if (startDate && endDate) {
         receitaQuery = receitaQuery.gte('created_at', startDate).lte('created_at', endDate);
@@ -213,8 +218,10 @@ const Dashboard = () => {
         receitaQuery
       ]);
 
-      const totalReceita = receitaData?.reduce((sum: number, item: any) => {
-        return sum + (item.valor_pago || 0);
+      const totalReceita = receitaData?.reduce((sum, item) => {
+        const valor = item.valor || 0;
+        const desconto = item.desconto || 0;
+        return sum + (valor - desconto);
       }, 0) || 0;
 
       setFilteredData({

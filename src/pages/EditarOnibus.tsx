@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Upload, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, X, Loader2, Wifi, Copy, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { SimpleImageUpload } from "@/components/onibus/SimpleImageUpload";
@@ -18,12 +18,15 @@ const EditarOnibus = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
   const [newImagePath, setNewImagePath] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     tipo_onibus: "",
     empresa: "",
     numero_identificacao: "",
     capacidade: "",
     description: "",
+    wifi_ssid: "",
+    wifi_password: "",
   });
 
   useEffect(() => {
@@ -49,6 +52,8 @@ const EditarOnibus = () => {
           numero_identificacao: data.numero_identificacao || "",
           capacidade: data.capacidade?.toString() || "",
           description: data.description || "",
+          wifi_ssid: data.wifi_ssid || "",
+          wifi_password: data.wifi_password || "",
         });
 
         // Buscar imagem associada
@@ -111,6 +116,8 @@ const EditarOnibus = () => {
         numero_identificacao: formData.numero_identificacao || null,
         capacidade: parseInt(formData.capacidade),
         description: formData.description || null,
+        wifi_ssid: formData.wifi_ssid || null,
+        wifi_password: formData.wifi_password || null,
         updated_at: new Date().toISOString(),
       };
 
@@ -253,6 +260,74 @@ const EditarOnibus = () => {
                 placeholder="Informações adicionais sobre o ônibus"
                 className="min-h-[100px]"
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wifi className="h-5 w-5" />
+              Configurações de WiFi
+            </CardTitle>
+            <CardDescription>
+              Configure as informações de WiFi do ônibus (opcional)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="wifi_ssid">Nome da Rede (SSID)</Label>
+                <Input
+                  id="wifi_ssid"
+                  value={formData.wifi_ssid}
+                  onChange={(e) => handleInputChange("wifi_ssid", e.target.value)}
+                  placeholder="Nome da rede WiFi"
+                />
+              </div>
+              <div>
+                <Label htmlFor="wifi_password">Senha do WiFi</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="wifi_password"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.wifi_password}
+                      onChange={(e) => handleInputChange("wifi_password", e.target.value)}
+                      placeholder="Senha da rede WiFi"
+                    />
+                    {formData.wifi_password && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                  {formData.wifi_password && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(formData.wifi_password);
+                        toast.success("Senha copiada!");
+                      }}
+                      title="Copiar senha"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
