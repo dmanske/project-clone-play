@@ -857,38 +857,67 @@ export type Database = {
       historico_pagamentos_categorizado: {
         Row: {
           categoria: string | null
+          created_at: string | null
           data_categorizacao: string | null
+          data_pagamento: string | null
+          forma_pagamento: string | null
           id: string
+          observacoes: string | null
           organization_id: string
           pagamento_id: string | null
           subcategoria: string | null
           usuario_id: string | null
           valor: number
           valor_pago: number
+          viagem_passageiro_id: string | null
         }
         Insert: {
           categoria?: string | null
+          created_at?: string | null
           data_categorizacao?: string | null
+          data_pagamento?: string | null
+          forma_pagamento?: string | null
           id?: string
+          observacoes?: string | null
           organization_id: string
           pagamento_id?: string | null
           subcategoria?: string | null
           usuario_id?: string | null
           valor: number
           valor_pago?: number
+          viagem_passageiro_id?: string | null
         }
         Update: {
           categoria?: string | null
+          created_at?: string | null
           data_categorizacao?: string | null
+          data_pagamento?: string | null
+          forma_pagamento?: string | null
           id?: string
+          observacoes?: string | null
           organization_id?: string
           pagamento_id?: string | null
           subcategoria?: string | null
           usuario_id?: string | null
           valor?: number
           valor_pago?: number
+          viagem_passageiro_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_historico_pagamentos_viagem_passageiro"
+            columns: ["viagem_passageiro_id"]
+            isOneToOne: false
+            referencedRelation: "backup_viagem_passageiros_state"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_historico_pagamentos_viagem_passageiro"
+            columns: ["viagem_passageiro_id"]
+            isOneToOne: false
+            referencedRelation: "viagem_passageiros"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "historico_pagamentos_categorizado_organization_id_fkey"
             columns: ["organization_id"]
@@ -3157,6 +3186,7 @@ export type Database = {
           onibus_id: string | null
           organization_id: string | null
           pago_por_credito: boolean | null
+          passeios_pagos: boolean | null
           setor_maracana: string | null
           status_pagamento: string | null
           status_presenca: string | null
@@ -3165,6 +3195,7 @@ export type Database = {
           valor_credito_utilizado: number | null
           valor_pago: number
           viagem_id: string
+          viagem_paga: boolean | null
         }
         Insert: {
           cidade_embarque?: string | null
@@ -3180,6 +3211,7 @@ export type Database = {
           onibus_id?: string | null
           organization_id?: string | null
           pago_por_credito?: boolean | null
+          passeios_pagos?: boolean | null
           setor_maracana?: string | null
           status_pagamento?: string | null
           status_presenca?: string | null
@@ -3188,6 +3220,7 @@ export type Database = {
           valor_credito_utilizado?: number | null
           valor_pago: number
           viagem_id: string
+          viagem_paga?: boolean | null
         }
         Update: {
           cidade_embarque?: string | null
@@ -3203,6 +3236,7 @@ export type Database = {
           onibus_id?: string | null
           organization_id?: string | null
           pago_por_credito?: boolean | null
+          passeios_pagos?: boolean | null
           setor_maracana?: string | null
           status_pagamento?: string | null
           status_presenca?: string | null
@@ -3211,6 +3245,7 @@ export type Database = {
           valor_credito_utilizado?: number | null
           valor_pago?: number
           viagem_id?: string
+          viagem_paga?: boolean | null
         }
         Relationships: [
           {
@@ -3470,6 +3505,7 @@ export type Database = {
           onibus_id: string | null
           organization_id: string
           outro_passeio: string | null
+          passeios_pagos: Json | null
           permite_viagem_com_pendencia: boolean | null
           preco_individual: number
           setor_padrao: string | null
@@ -3503,6 +3539,7 @@ export type Database = {
           onibus_id?: string | null
           organization_id: string
           outro_passeio?: string | null
+          passeios_pagos?: Json | null
           permite_viagem_com_pendencia?: boolean | null
           preco_individual: number
           setor_padrao?: string | null
@@ -3536,6 +3573,7 @@ export type Database = {
           onibus_id?: string | null
           organization_id?: string
           outro_passeio?: string | null
+          passeios_pagos?: Json | null
           permite_viagem_com_pendencia?: boolean | null
           preco_individual?: number
           setor_padrao?: string | null
