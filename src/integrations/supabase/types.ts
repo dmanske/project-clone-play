@@ -864,6 +864,7 @@ export type Database = {
           subcategoria: string | null
           usuario_id: string | null
           valor: number
+          valor_pago: number
         }
         Insert: {
           categoria?: string | null
@@ -874,6 +875,7 @@ export type Database = {
           subcategoria?: string | null
           usuario_id?: string | null
           valor: number
+          valor_pago?: number
         }
         Update: {
           categoria?: string | null
@@ -884,6 +886,7 @@ export type Database = {
           subcategoria?: string | null
           usuario_id?: string | null
           valor?: number
+          valor_pago?: number
         }
         Relationships: [
           {
