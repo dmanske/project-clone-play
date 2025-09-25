@@ -224,8 +224,9 @@ export function OnibusForm({
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
-              )}
-            />
+              );
+            }}
+          />
           </div>
         </div>
 
